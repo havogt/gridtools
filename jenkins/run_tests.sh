@@ -9,7 +9,7 @@ if [[ -z "${no_mpi}" ]]; then
 fi
 
 if [[ ! -z "${GT_CPP_BINDGEN_SOURCE_DIR}" ]]; then
-    set_cpp_bindgen_source_dir="-cpp_bindgen-source-dir ${GT_CPP_BINDGEN_SOURCE_DIR}"
+    set_cpp_bindgen_source_dir="--cpp_bindgen-source-dir ${GT_CPP_BINDGEN_SOURCE_DIR}"
 fi
 
 ./build/pyutils/driver.py -v -l $logfile test $mpi_flag -b $set_cpp_bindgen_source_dir|| { echo 'Tests failed'; rm -rf $tmpdir; exit 2; }
