@@ -43,7 +43,7 @@ def build(build_type, precision, grid, environment, target, source_dir,
     env.set_cmake_arg('GT_SINGLE_PRECISION', precision == 'float')
     env.set_cmake_arg('GT_TESTS_ICOSAHEDRAL_GRID', grid == 'icosahedral')
     if cpp_bindgen_source_dir:
-        env.set_cmake_arg('FETCH_CONTENT_SOURCE_DIR_CPP_BINDGEN', cpp_bindgen_source_dir)
+        env.set_cmake_arg('FETCHCONTENT_SOURCE_DIR_CPP_BINDGEN', cpp_bindgen_source_dir)
 
     if environment:
         env.load(environment)
