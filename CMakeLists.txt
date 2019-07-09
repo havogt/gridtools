@@ -38,18 +38,12 @@ endif()
 include(components)
 
 include(FetchContent)
-if(DEFINED ENV{GT_CPP_BINDGEN_SOURCE_DIR}) # used in test of cpp_bindgen against GridTools
-  FetchContent_Declare(
-    cpp_bindgen
-    SOURCE_DIR $ENV{GT_CPP_BINDGEN_SOURCE_DIR}
-    )
-else()
-  FetchContent_Declare(
-    cpp_bindgen
-    GIT_REPOSITORY https://github.com/GridTools/cpp_bindgen.git
-    GIT_TAG        master
-  )
-endif()
+FetchContent_Declare(
+  cpp_bindgen
+  GIT_REPOSITORY https://github.com/GridTools/cpp_bindgen.git
+  GIT_TAG        master
+)
+
 # Enable legacy mode for CPP_BINDGEN for users of GT 1.0
 # TODO remove in GT 2.0
 set(CPP_BINDGEN_GT_LEGACY ON)

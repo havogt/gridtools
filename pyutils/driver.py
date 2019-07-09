@@ -30,8 +30,10 @@ def driver(verbose, logfile):
 @args.arg('--install-dir', '-i', help='install directory')
 @args.arg('--cmake-only', action='store_true',
           help='only execute CMake but do not build')
+@args.arg('--cpp_bindgen-source-dir', action='store_true',
+          help='cpp_bindgen source directory')
 def build(build_type, precision, grid, environment, target, source_dir,
-          build_dir, install_dir, cmake_only):
+          build_dir, install_dir, cmake_only, cpp_bindgen_source_dir):
     import build
 
     if source_dir is None:
@@ -40,6 +42,8 @@ def build(build_type, precision, grid, environment, target, source_dir,
     env.set_cmake_arg('CMAKE_BUILD_TYPE', build_type.title())
     env.set_cmake_arg('GT_SINGLE_PRECISION', precision == 'float')
     env.set_cmake_arg('GT_TESTS_ICOSAHEDRAL_GRID', grid == 'icosahedral')
+    if cpp_bindgen_source_dir:
+        env.set_cmake_arg('FETCH_CONTENT_SOURCE_DIR_CPP_BINDGEN', cpp_bindgen_source_dir)
 
     if environment:
         env.load(environment)
@@ -77,12 +81,12 @@ if buildinfo:
             label = 'perftests_*'
         else:
             label = '(unittest_*|regression_*)'
-            
+
         if run_mpi_tests:
             mpi_label = 'mpitest_*'
         else:
             mpi_label = None
-            
+
         test.run(label, mpi_label, verbose_ctest)
         if build_examples:
             test.compile_examples(examples_build_dir)
