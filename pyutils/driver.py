@@ -30,8 +30,7 @@ def driver(verbose, logfile):
 @args.arg('--install-dir', '-i', help='install directory')
 @args.arg('--cmake-only', action='store_true',
           help='only execute CMake but do not build')
-@args.arg('--cpp_bindgen-source-dir', action='store_true',
-          help='cpp_bindgen source directory')
+@args.arg('--cpp_bindgen-source-dir', help='cpp_bindgen source directory')
 def build(build_type, precision, grid, environment, target, source_dir,
           build_dir, install_dir, cmake_only, cpp_bindgen_source_dir):
     import build
