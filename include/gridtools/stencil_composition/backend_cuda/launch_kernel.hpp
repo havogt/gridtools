@@ -224,7 +224,8 @@ namespace gridtools {
                     <<<blocks, threads, shared_memory_size>>>(std::move(fun), i_size, j_size);
 
 #ifndef NDEBUG
-            GT_CUDA_CHECK(cudaDeviceSynchronize());
+            cudaDeviceSynchronize();
+            GT_CUDA_CHECK(cudaGetLastError());
 #else
             GT_CUDA_CHECK(cudaGetLastError());
 #endif

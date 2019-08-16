@@ -17,6 +17,7 @@
 #include <cuda_runtime.h>
 
 #include "defs.hpp"
+#include "generic_metafunctions/utility.hpp"
 
 #define GT_CUDA_CHECK(expr)                                                                    \
     do {                                                                                       \
@@ -27,6 +28,13 @@
 
 namespace gridtools {
     namespace cuda_util {
+        template <class... Ts>
+        GT_FUNCTION_DEVICE void cuda_print(const char *format, Ts &&... ts) {
+            if (blockIdx.x == 0 && threadIdx.x == 0 && blockIdx.y == 0 && threadIdx.y == 0) {
+                printf(format, wstd::forward<Ts>(ts)...);
+            }
+        }
+
         template <class T>
         struct is_cloneable : std::is_trivially_copyable<T> {};
 

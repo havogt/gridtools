@@ -49,9 +49,13 @@ namespace gridtools {
 
                 template <class Step, std::enable_if_t<Step::value == -1, int> = 0>
                 GT_FUNCTION_DEVICE void slide(Step) {
+                    // static_assert(Plus == 1, "Plus");
+                    // static_assert(Minus == 0, "Minus");
 #pragma unroll
-                    for (int_t k = Plus - Minus; k > 0; --k)
+                    for (int_t k = Plus - Minus; k > 0; --k) {
+                        // cuda_util::cuda_print("slide src=%f dst=%f\n", m_values[k - 1], m_values[k]);
                         m_values[k] = m_values[k - 1];
+                    }
                 }
 
                 GT_FUNCTION_DEVICE ptr<T> ptr() { return {m_values - Minus}; }

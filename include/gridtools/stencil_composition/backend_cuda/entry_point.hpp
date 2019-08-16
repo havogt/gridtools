@@ -125,7 +125,7 @@ namespace gridtools {
 
             template <class Grid, class Kernel>
             Kernel launch_or_fuse(Grid const &grid, Kernel kernel) && {
-                launch_kernel<MaxExtent, i_block_size_t::value, j_block_size_t::value>(grid.i_size(),
+               launch_kernel<MaxExtent, i_block_size_t::value, j_block_size_t::value>(grid.i_size(),
                     grid.j_size(),
                     blocks_required_z<BlockSize>(grid.k_size()),
                     make_multi_kernel(std::move(m_funs)),
@@ -133,12 +133,12 @@ namespace gridtools {
                 return kernel;
             }
 
-            template <class Grid, class Fun>
-            kernel<MaxExtent, BlockSize, Funs..., Fun> launch_or_fuse(
-                Grid const &grid, kernel<MaxExtent, BlockSize, Fun> kernel) && {
-                return {tuple_util::push_back(std::move(m_funs), tuple_util::get<0>(std::move(kernel.m_funs))),
-                    std::max(m_shared_memory_size, kernel.m_shared_memory_size)};
-            }
+            //template <class Grid, class Fun>
+            //kernel<MaxExtent, BlockSize, Funs..., Fun> launch_or_fuse(
+            //    Grid const &grid, kernel<MaxExtent, BlockSize, Fun> kernel) && {
+            //    return {tuple_util::push_back(std::move(m_funs), tuple_util::get<0>(std::move(kernel.m_funs))),
+            //        std::max(m_shared_memory_size, kernel.m_shared_memory_size)};
+           // }
         };
 
         struct no_kernel {
