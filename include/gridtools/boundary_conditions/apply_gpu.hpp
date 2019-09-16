@@ -67,7 +67,6 @@ namespace gridtools {
                 m_values[2][2][2] = p(direction<plus_, plus_, plus_>{});
             }
 
-            GT_FUNCTION
             precomputed_pred(precomputed_pred const &) = default;
 
             template <gridtools::sign I, gridtools::sign J, gridtools::sign K>
@@ -96,7 +95,6 @@ namespace gridtools {
                 array<uint_t, 3> m_start;
                 array<uint_t, 3> m_perm = {{0, 1, 2}};
 
-                GT_FUNCTION
                 shape_type() = default;
 
                 GT_FUNCTION
