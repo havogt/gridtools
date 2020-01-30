@@ -8,6 +8,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+#include <array>
+#include <bits/c++config.h>
 #include <cpp_bindgen/export.hpp>
 #include <gridtools/interface/fortran_array_adapter.hpp>
 #include <gridtools/stencil_composition/stencil_composition.hpp>
@@ -17,6 +19,49 @@ namespace gt = gridtools;
 // In this example, we demonstrate how the cpp_bindgen library can be used to export functions to C and Fortran. We are
 // going to export the functions required to run a simple copy stencil (see also the commented example in
 // examples/stencil_composition/copy_stencil.cpp)
+
+namespace custom_array {
+    template <class T>
+    struct my_array {
+        using data_t = T;
+
+        T *data;
+        std::array<int, 3> sizes;
+        std::array<int, 3> strides;
+
+        const T &operator()(int i, int j, int k) const {
+            assert(i < sizes[0] && j < sizes[1] && k < sizes[2] && "out of bounds");
+            return data[i * strides[0] + j * strides[1] + k * strides[2]];
+        }
+
+        T &operator()(int i, int j, int k) {
+            assert(i < sizes[0] && j < sizes[1] && k < sizes[2] && "out of bounds");
+            return data[i * strides[0] + j * strides[1] + k * strides[2]];
+        }
+    };
+
+    template <typename T>
+    my_array<T> bindgen_make_fortran_array_view(bindgen_fortran_array_descriptor *descriptor, my_array<T> *) {
+        if (descriptor->rank != 3) {
+            throw std::runtime_error("only 3-dimensional arrays are supported");
+        }
+        return my_array<T>{static_cast<T *>(descriptor->data),
+            {descriptor->dims[0], descriptor->dims[1], descriptor->dims[2]},
+            {1, descriptor->dims[0], descriptor->dims[0] * descriptor->dims[1]}};
+    }
+
+    template <typename T>
+    bindgen_fortran_array_descriptor get_fortran_view_meta(my_array<T> *) {
+        bindgen_fortran_array_descriptor descriptor;
+        descriptor.type = cpp_bindgen::fortran_array_element_kind<T>::value;
+        descriptor.rank = 3;
+        descriptor.is_acc_present = false;
+        return descriptor;
+    }
+
+    static_assert(cpp_bindgen::is_fortran_array_bindable<my_array<float>>::value, "");
+    static_assert(cpp_bindgen::is_fortran_array_wrappable<my_array<float>>::value, "");
+} // namespace custom_array
 
 namespace {
 
@@ -67,6 +112,30 @@ namespace {
         transform(descriptor, data_store);
     }
 
+    void simple_copy_to_gt_impl(data_store_t data_store, custom_array::my_array<float> fortran_array) {
+        auto view = gt::make_host_view(data_store);
+        for (int k = 0; k < fortran_array.sizes[2]; ++k) {
+            for (int j = 0; j < fortran_array.sizes[1]; ++j) {
+                for (int i = 0; i < fortran_array.sizes[0]; ++i) {
+                    view(i, j, k) = fortran_array(i, j, k);
+                }
+            }
+        }
+        data_store.sync();
+    }
+
+    void simple_copy_from_gt_impl(custom_array::my_array<float> fortran_array, data_store_t data_store) {
+        data_store.sync();
+        auto view = gt::make_host_view(data_store);
+        for (int k = 0; k < fortran_array.sizes[2]; ++k) {
+            for (int j = 0; j < fortran_array.sizes[1]; ++j) {
+                for (int i = 0; i < fortran_array.sizes[0]; ++i) {
+                    fortran_array(i, j, k) = view(i, j, k);
+                }
+            }
+        }
+    }
+
     // That means that in the generated Fortran code, a wrapper is created that takes a Fortran array, and converts
     // it into the fortran array wrappable type.
     void run_stencil_impl(gt::computation<p_in, p_out> &computation, data_store_t in, data_store_t out) {
@@ -89,4 +158,7 @@ namespace {
     // the *_WRAPPED_* versions need to be used
     BINDGEN_EXPORT_BINDING_WRAPPED_2(transform_c_to_f, transform_c_to_f_impl);
     BINDGEN_EXPORT_BINDING_WRAPPED_2(transform_f_to_c, transform_f_to_c_impl);
+
+    BINDGEN_EXPORT_BINDING_WRAPPED_2(simple_copy_to_gt, simple_copy_to_gt_impl);
+    BINDGEN_EXPORT_BINDING_WRAPPED_2(simple_copy_from_gt, simple_copy_from_gt_impl);
 } // namespace
