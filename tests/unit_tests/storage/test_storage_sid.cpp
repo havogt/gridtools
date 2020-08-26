@@ -101,5 +101,16 @@ namespace gridtools {
             static_assert(tuple_util::size<lower_bounds_t>() == 0, "");
             static_assert(tuple_util::size<upper_bounds_t>() == 0, "");
         }
+
+        TEST(storage_sid, bounds_type) {
+            auto testee = builder.dimensions(integral_constant<int, 1>{}, 1, 1, 1)();
+            using testee_t = decltype(testee);
+            using upper_bounds_t = sid::upper_bounds_type<testee_t>;
+
+            static_assert(std::is_same<meta::at_c<upper_bounds_t, 0>, int>{});
+            static_assert(std::is_same<meta::at_c<upper_bounds_t, 1>, int>{});
+            static_assert(std::is_same<meta::at_c<upper_bounds_t, 2>, int>{});
+            static_assert(std::is_same<meta::at_c<upper_bounds_t, 3>, int>{});
+        }
     } // namespace
 } // namespace gridtools
