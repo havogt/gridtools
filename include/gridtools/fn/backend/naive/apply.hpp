@@ -22,6 +22,23 @@
 
 namespace gridtools::fn {
     namespace naive_apply_impl_ {
+
+        template <class Stencil, class MakeIterator, class Out, class... Ins>
+        struct stencil_stage {
+            GT_FUNCTION void operator()(auto const &ptr, auto const &strides) const {
+                *at_key<Out>(ptr) = Stencil{}()(MakeIterator{}()(Ins{}, ptr, strides)...);
+            }
+        };
+
+        template <class Stencil, class MakeIterator, class Out, class Ins>
+        struct make_stencil_stage;
+        template <class Stencil, class MakeIterator, class Out, template <class...> class Ins, class... InsElems>
+        struct make_stencil_stage<Stencil, MakeIterator, Out, Ins<InsElems...>> {
+            using type = stencil_stage<Stencil, MakeIterator, Out, InsElems...>;
+        };
+        template <class Stencil, class MakeIterator, class Out, class Ins>
+        using make_stencil_stage_t = typename make_stencil_stage<Stencil, MakeIterator, Out, Ins>::type;
+
         struct out_tag {};
 
         template <class T>
@@ -40,27 +57,25 @@ namespace gridtools::fn {
                 meta::rename<std::tuple, get_keys<Sizes>>());
         }
 
-        template <auto Stencil,
+        template <class Stencil,
+            class MakeIterator,
             class Sizes,
             class Offsets,
             class Output,
             class Inputs,
-            class MakeComposite,
-            class MakeIterator>
+            class MakeComposite>
         void naive_apply(Sizes const &sizes,
             Offsets const &offsets,
             Output &output,
             Inputs &&inputs,
-            MakeComposite &&make_composite,
-            MakeIterator &&make_iterator) {
+            MakeComposite &&make_composite) {
             using in_tags_t = meta::transform<in_tag, meta::make_indices<tuple_util::size<Inputs>, std::tuple>>;
             auto composite = std::forward<MakeComposite>(make_composite)(out_tag(), in_tags_t(), output, inputs);
             auto strides = sid::get_strides(composite);
             auto ptr = sid::get_origin(composite)();
             sid::multi_shift(ptr, strides, offsets);
             make_loops(sizes)([&](auto const &ptr, auto const &strides) {
-                *at_key<out_tag>(ptr) =
-                    std::apply(Stencil, tuple_util::transform(make_iterator(ptr, strides), in_tags_t()));
+                make_stencil_stage_t<Stencil, MakeIterator, out_tag, in_tags_t>{}(ptr, strides);
             })(ptr, strides);
         }
     } // namespace naive_apply_impl_

@@ -50,18 +50,20 @@ namespace gridtools::fn {
             class Ins = meta::at_c<Spec, 4>>
         using make_stage_from_spec = meta::list<Stencil, meta::val<domain_extender<OffsetsList>>, Out, Ins>;
 
-        template <auto Stencil, class Domain, class Output, class... Inputs>
+        template <class Stencil, class Domain, class Output, class... Inputs>
         void process_stencil(Domain const &domain, Output &output, std::tuple<Inputs...> inputs) {
-            if constexpr (ast::has_tmps<Stencil, Inputs...>) {
-                using input_types_t = meta::list<sid::element_type<Inputs>...>;
-                using tree_t = ast::popup_tmps<ast::parse<Stencil, Inputs...>>;
-                using specs_t = ast::flatten_tmps_tree<tree_t, input_types_t>;
-                using stages_t = meta::transform<make_stage_from_spec, specs_t>;
-                auto alloc = sid::make_allocator(&std::make_unique<char[]>);
-                auto tmps = make_tmps<meta::pop_back<specs_t>>(alloc, domain);
-                fn_fencil(naive(), stages_t(), domain, tuple_util::push_back(tuple_util::concat(inputs, tmps), output));
+            if constexpr (ast::has_tmps<Stencil{}(), Inputs...>) {
+                static_assert(sizeof...(Inputs) < 0);
+                // using input_types_t = meta::list<sid::element_type<Inputs>...>;
+                // using tree_t = ast::popup_tmps<ast::parse<Stencil, Inputs...>>;
+                // using specs_t = ast::flatten_tmps_tree<tree_t, input_types_t>;
+                // using stages_t = meta::transform<make_stage_from_spec, specs_t>;
+                // auto alloc = sid::make_allocator(&std::make_unique<char[]>);
+                // auto tmps = make_tmps<meta::pop_back<specs_t>>(alloc, domain);
+                // fn_fencil(naive(), stages_t(), domain, tuple_util::push_back(tuple_util::concat(inputs, tmps),
+                // output));
             } else {
-                fn_apply(naive(), domain, meta::constant<Stencil>, output, inputs);
+                fn_apply(naive(), domain, Stencil{}, output, inputs);
             }
         }
     } // namespace naive_fencil_impl_
@@ -70,7 +72,7 @@ namespace gridtools::fn {
     void fn_fencil(naive, L<Stages...>, Domain const &domain, Refs const &refs) {
         using namespace naive_fencil_impl_;
         (...,
-            process_stencil<meta::first<Stages>::value>(meta::second<Stages>::value(domain),
+            process_stencil<meta::first<Stages>>(meta::second<Stages>::value(domain),
                 std::get<meta::third<Stages>::value>(refs),
                 select(meta::at_c<Stages, 3>(), refs)));
     }

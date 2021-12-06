@@ -15,8 +15,8 @@
 
 namespace gridtools::fn {
     namespace fencil_impl_ {
-        template <auto Stencil, auto Domain, size_t Out, size_t... Ins>
-        using make_stage = meta::list<meta::val<Stencil>,
+        template <class Stencil, auto Domain, size_t Out, size_t... Ins>
+        using make_stage = meta::list<Stencil,
             meta::val<Domain>,
             std::integral_constant<size_t, Out>,
             meta::list<std::integral_constant<size_t, Ins>...>>;
