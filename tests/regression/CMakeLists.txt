@@ -155,6 +155,20 @@ add_executable(c_array_copy c_array_copy.cpp)
 target_link_libraries(c_array_copy gtest_main gmock gridtools)
 add_test(NAME c_array_copy COMMAND $<TARGET_FILE:c_array_copy>)
 
+option(GT_TESTS_ENABLE_MDSPAN "Test mdspan-SID adapter" ON)
+if(GT_TESTS_ENABLE_MDSPAN)
+    include(FetchContent)
+    FetchContent_Declare(
+        mdspan
+        GIT_REPOSITORY https://github.com/kokkos/mdspan.git
+        GIT_TAG        mdspan-0.2.0
+    )
+    FetchContent_MakeAvailable(mdspan)
+    add_executable(mdspan_copy mdspan_copy.cpp)
+    target_link_libraries(mdspan_copy gtest_main gmock gridtools mdspan)
+    add_test(NAME mdspan_copy COMMAND $<TARGET_FILE:mdspan_copy>)
+endif() 
+
 if(TARGET stencil_dump)
     add_executable(dump dump.cpp)
     target_link_libraries(dump gtest_main gmock gridtools stencil_dump)
