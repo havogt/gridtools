@@ -38,6 +38,7 @@ endfunction()
 gridtools_check_compilation(test_meta test_meta.cpp)
 
 add_subdirectory(common)
+add_subdirectory(cid)
 add_subdirectory(sid)
 add_subdirectory(boundaries)
 add_subdirectory(stencil)
