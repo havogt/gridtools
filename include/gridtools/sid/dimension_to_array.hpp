@@ -38,6 +38,12 @@ namespace gridtools {
                     return *gridtools::sid::shifted(m_orig_ptr, m_stride, i);
                 }
                 GT_FUNCTION auto &operator[](size_t i) { return *gridtools::sid::shifted(m_orig_ptr, m_stride, i); }
+
+                template <class TupleLike>
+                GT_FUNCTION std::enable_if_t<is_tuple_like<TupleLike>::value, void> /*TODO*/ operator=(
+                    TupleLike const &t) {
+                    // TODO
+                }
             };
 
             template <size_t I, class Ptr, class Stride>

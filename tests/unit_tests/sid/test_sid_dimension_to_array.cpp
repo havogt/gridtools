@@ -58,5 +58,18 @@ namespace gridtools {
             EXPECT_EQ(42, data[3][4]);
         }
 
+        TEST(dimension_to_array, assignable_from_tuple_like) {
+            double data[2][5];
+            auto testee = sid::dimension_to_array(data, gridtools::integral_constant<int, 0>{});
+
+            static_assert(is_sid<decltype(testee)>::value);
+
+            auto ptr = sid::get_origin(testee)();
+
+            *ptr = tuple(2., 3.);
+            EXPECT_EQ((*ptr)[0], 2.); // TODO
+            EXPECT_EQ((*ptr)[1], 3.);
+        }
+
     } // namespace
 } // namespace gridtools
