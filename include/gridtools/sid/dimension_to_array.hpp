@@ -50,10 +50,10 @@ namespace gridtools {
                 GT_FUNCTION auto &operator[](size_t i) { return *gridtools::sid::shifted(m_orig_ptr, m_stride, i); }
 
                 template <class TupleLike>
-                GT_FUNCTION std::enable_if_t<is_tuple_like<TupleLike>::value, void> /*TODO*/ operator=(
-                    TupleLike const &t) {
+                GT_FUNCTION array_view &operator=(TupleLike const &t) { // TODO enable only for tuple_like
                     assign_helper<std::make_index_sequence<tuple_util::size<TupleLike>::value>>::apply(
                         *this, t); // TODO simplify
+                    return *this;
                 }
             };
 
@@ -127,7 +127,7 @@ namespace gridtools {
                 OrigPtrHolder m_orig_ptr_holder;
                 Strides m_strides;
 
-                auto operator()() {
+                auto operator()() const {
                     return ptr<std::decay_t<decltype(std::declval<OrigPtrHolder>()())>, Strides>{
                         // return ptr<std::remove_cvref_t<decltype(std::declval<OrigPtrHolder>()())>, Strides>{
                         m_orig_ptr_holder(),
@@ -136,7 +136,7 @@ namespace gridtools {
 
                 template <class Arg>
                 friend constexpr GT_FUNCTION ptr_holder operator+(ptr_holder const &obj, Arg &&offset) {
-                    return {obj.m_impl + std::forward<Arg>(offset), obj.m_strides};
+                    return {obj.m_orig_ptr_holder + std::forward<Arg>(offset), obj.m_strides};
                 }
             };
 
