@@ -13,6 +13,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "../common/hymap.hpp"
 #include "../common/tuple.hpp"
 #include "../meta.hpp"
 #include "concept.hpp"
@@ -22,6 +23,15 @@
 namespace gridtools {
     namespace sid {
         namespace dimension_to_array_impl_ {
+            template <class>
+            struct assign_helper;
+            template <size_t... Is>
+            struct assign_helper<std::index_sequence<Is...>> {
+                template <class L, class R>
+                static GT_FUNCTION void apply(L &&lhs, R &&rhs) {
+                    (..., (tuple_util::get<Is>(lhs) = tuple_util::get<Is>(rhs)));
+                }
+            };
 
             template <class OrigPtr, class Stride>
             struct array_view {
@@ -42,7 +52,8 @@ namespace gridtools {
                 template <class TupleLike>
                 GT_FUNCTION std::enable_if_t<is_tuple_like<TupleLike>::value, void> /*TODO*/ operator=(
                     TupleLike const &t) {
-                    // TODO
+                    assign_helper<std::make_index_sequence<tuple_util::size<TupleLike>::value>>::apply(
+                        *this, t); // TODO simplify
                 }
             };
 
@@ -87,11 +98,6 @@ namespace gridtools {
             template <class Ptr, class Stride>
             getter tuple_getter(array_view<Ptr, Stride> const &);
 
-            // template <class... Dims>
-            // auto get_strides(auto const &strides) {
-            //     return gridtools::tuple(at_key<Dims>(strides)...);
-            // }
-
             template <class OrigPtr, class Stride>
             struct ptr {
                 OrigPtr m_orig_ptr;
@@ -134,7 +140,7 @@ namespace gridtools {
                 }
             };
 
-            template <class Sid, class Dim>
+            template <class Dim, class Sid>
             struct reinterpreted_sid : sid::delegate<Sid> {
                 friend auto sid_get_origin(reinterpreted_sid &obj) {
                     return ptr_holder<sid::ptr_holder_type<Sid>,
@@ -142,14 +148,16 @@ namespace gridtools {
                         sid::get_origin(obj.m_impl), at_key<Dim>(sid::get_strides(obj.m_impl))};
                 }
 
-                using sid::delegate<Sid>::delegate;
+                friend auto sid_get_strides(reinterpreted_sid const &obj) {
+                    return hymap::canonicalize_and_remove_key<Dim>(sid::get_strides(obj.m_impl));
+                }
 
-                // TODO get_strides should remove Dim
+                using sid::delegate<Sid>::delegate;
             };
         } // namespace dimension_to_array_impl_
 
-        template <class Sid, class Dim>
-        dimension_to_array_impl_::reinterpreted_sid<Sid, Dim> dimension_to_array(Sid &&sid, Dim) {
+        template <class Dim, class Sid>
+        dimension_to_array_impl_::reinterpreted_sid<Dim, Sid> dimension_to_array(Sid &&sid) {
             return {std::forward<Sid>(sid)};
         }
     } // namespace sid
