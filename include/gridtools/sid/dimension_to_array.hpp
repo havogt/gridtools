@@ -373,6 +373,12 @@ namespace gridtools {
                 friend auto sid_get_strides(reinterpreted_sid const &obj) {
                     return hymap::canonicalize_and_remove_key<Dim>(sid::get_strides(obj.m_impl));
                 }
+                friend auto sid_get_lower_bounds(reinterpreted_sid const &obj) {
+                    return hymap::canonicalize_and_remove_key<Dim>(sid::get_lower_bounds(obj.m_impl));
+                }
+                friend auto sid_get_upper_bounds(reinterpreted_sid const &obj) {
+                    return hymap::canonicalize_and_remove_key<Dim>(sid::get_upper_bounds(obj.m_impl));
+                }
 
                 using sid::delegate<Sid>::delegate;
             };
