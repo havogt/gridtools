@@ -187,8 +187,11 @@ namespace gridtools {
                 ptr_array() = default;
 
                 template <class StrideT, class Offset>
-                constexpr auto friend sid_shift(ptr_array &obj, StrideT const &stride, Offset const &o) {
-                    return ptr_array{sid::shifted(obj.m_ptr, stride, o), obj.m_stride};
+                constexpr void friend sid_shift(ptr_array &obj, StrideT const &stride, Offset const &o) {
+                    // static_assert(sizeof(StrideT) < 0);
+                    // obj.m_ptr =
+                    sid::shift(obj.m_ptr, stride, o);
+                    // return ptr_array{sid::shifted(obj.m_ptr, stride, o), obj.m_stride};
                 }
 
                 auto operator*() { // if the derefed ptr is an lvalue we return a array of references, otherwise an
