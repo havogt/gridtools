@@ -8,10 +8,12 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+#include "gridtools/meta/debug.hpp"
 #include <gridtools/sid/multi_shift.hpp>
 
 #include <gtest/gtest.h>
 
+#include <gridtools/common/array.hpp>
 #include <gridtools/common/integral_constant.hpp>
 #include <gridtools/common/tuple.hpp>
 #include <gridtools/sid/dimension_to_array.hpp>
@@ -19,40 +21,46 @@
 namespace gridtools {
     namespace {
         using namespace literals;
-
-        TEST(array_view, smoke) {
+        TEST(ptr_array, smoke) {
             double data[15][42];
 
-            sid::dimension_to_array_impl_::array_view testee(&data[0][0], std::integral_constant<int, 42>{});
-
-            // static_assert(is_tuple_like<decltype(testee)>::value); // TODO
+            auto testee = sid::dimension_to_array_impl_::init_ptr_array<double *, 15>(
+                &data[0][0], std::integral_constant<int, 42>{});
+            // ptr_array<double *, 15> testee(
+            // );
 
             EXPECT_EQ(data[1][0], testee[1]);
             EXPECT_EQ(&data[1][0], &testee[1]);
             EXPECT_EQ(&data[2][0], &tuple_util::get<2>(testee));
             using std::get;
             EXPECT_EQ(&data[3][0], &get<3>(testee));
+
+            testee = array<double, 15>{};
         }
-        // TEST(array_view, nested) {
-        //     double data[15][42];
+        TEST(ptr_array, nested) {
+            double data[15][42];
 
-        //     sid::dimension_to_array_impl_::array_view inner(&data[0][0], std::integral_constant<int, 42>{});
-        //     sid::dimension_to_array_impl_::array_view testee(inner, std::integral_constant<int, 1>{});
+            auto inner = sid::dimension_to_array_impl_::init_ptr_array<double *, 15>(
+                &data[0][0], std::integral_constant<int, 42>{});
+            auto testee = sid::dimension_to_array_impl_::init_ptr_array<decltype(inner), 42>(
+                inner, std::integral_constant<int, 1>{});
 
-        //     // static_assert(is_tuple_like<decltype(testee)>::value); // TODO
-        //     EXPECT_EQ(data[1][2], testee[2][1]);
+            EXPECT_TRUE(&testee);
 
-        //     // EXPECT_EQ(data[1][0], testee[1]);
-        //     // EXPECT_EQ(&data[1][0], &testee[1]);
-        //     // EXPECT_EQ(&data[2][0], &tuple_util::get<2>(testee));
-        //     // using std::get;
-        //     // EXPECT_EQ(&data[3][0], &get<3>(testee));
-        // }
+            // GT_META_PRINT_TYPE(decltype(testee[0]))
+
+            EXPECT_EQ(data[1][0], testee[0][1]);
+            EXPECT_EQ(&data[1][0], &testee[0][1]);
+
+            testee[0] = array<double, 15>{};
+            testee = array<array<double, 15>, 42>{};
+        }
+
         TEST(dimension_to_array, smoke) {
             double data[15][42];
-            auto testee = sid::dimension_to_array<gridtools::integral_constant<int, 0>>(data);
+            auto testee = sid::dimension_to_array<gridtools::integral_constant<int, 0>, 15>(data);
 
-            static_assert(is_sid<decltype(testee)>::value);
+            is_sid_separate<decltype(testee)>();
 
             auto ptr = sid::get_origin(testee)();
             auto strides = sid::get_strides(testee);
@@ -71,7 +79,7 @@ namespace gridtools {
 
         TEST(dimension_to_array, assignable_from_tuple_like) {
             double data[2][5];
-            auto testee = sid::dimension_to_array<gridtools::integral_constant<int, 0>>(data);
+            auto testee = sid::dimension_to_array<gridtools::integral_constant<int, 0>, 2>(data);
 
             static_assert(is_sid<decltype(testee)>::value);
 
@@ -82,19 +90,21 @@ namespace gridtools {
             EXPECT_EQ((*ptr)[1], 3.);
         }
 
-        // TEST(dimension_to_array, nested) {
-        //     double data[2][3];
-        //     auto testee = sid::dimension_to_array<integral_constant<int, 1>>(
-        //         sid::dimension_to_array<integral_constant<int, 0>>(data));
+        TEST(dimension_to_array, nested) {
+            double data[2][3];
+            auto testee = sid::dimension_to_array<integral_constant<int, 1>, 3>(
+                sid::dimension_to_array<integral_constant<int, 0>, 2>(data));
 
-        //     static_assert(is_sid<decltype(testee)>::value);
+            static_assert(is_sid<decltype(testee)>::value);
 
-        //     auto ptr = sid::get_origin(testee)();
+            auto ptr = sid::get_origin(testee)();
 
-        //     auto derefed = *ptr;
+            auto derefed = *ptr;
+            auto outer = derefed[0];
+            GT_META_PRINT_TYPE(decltype(outer));
 
-        //     EXPECT_EQ(&data[1][2], &derefed[2][1]);
-        // }
+            // EXPECT_EQ(&data[1][2], &derefed[2][1]);
+        }
 
     } // namespace
 } // namespace gridtools
