@@ -21,7 +21,6 @@
 #include "concept.hpp"
 #include "delegate.hpp"
 #include "gridtools/common/host_device.hpp"
-// #include "multi_shift.hpp"
 
 namespace gridtools {
     namespace sid {
