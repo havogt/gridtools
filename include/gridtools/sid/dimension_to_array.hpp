@@ -207,7 +207,8 @@ reference_wrapper(T&) -> reference_wrapper<T>;
                     return ptr_array{obj.m_ptr + std::forward<Arg>(arg), obj.m_stride};
                 }
 
-                constexpr GT_FUNCTION decltype(std::declval<ptr_array>().m_ptr - std::declval<ptr_array>().m_ptr) friend operator-(ptr_array const &lhs, ptr_array const &rhs) {
+                constexpr GT_FUNCTION decltype(std::declval<Ptr>() - std::declval<Ptr>()) friend operator-(
+                    ptr_array const &lhs, ptr_array const &rhs) {
                     return lhs.m_ptr - rhs.m_ptr;
                 }
             };
