@@ -10,8 +10,9 @@
 
 #include <gtest/gtest.h>
 
-#include <gridtools/sid/dimension_to_array.hpp>
 #include <gridtools/sid/composite.hpp>
+#include <gridtools/sid/dimension_to_array.hpp>
+#include <gridtools/sid/dimension_to_tuple_like.hpp>
 #include <gridtools/stencil/cartesian.hpp>
 
 #include <stencil_select.hpp>
@@ -139,5 +140,23 @@ namespace {
         TypeParam::verify(in, out2);
         TypeParam::verify(in, out3);
         TypeParam::benchmark("copy_stencil_tuple_composite", comp);
+    }
+    GT_REGRESSION_TEST(copy_stencil_tuple_dim2tuple, test_environment<>, stencil_backend_t) {
+        using float_t = typename TypeParam::float_t;
+        auto in = [](int i, int j, int k, int t) { return i + j + k + t; };
+        auto out_ds = TypeParam::template builder<float_t>(integral_constant<int, 4>{}).build();
+        static_assert(is_sid<decltype(out_ds)>::value);
+        auto out = sid::dimension_to_tuple_like<integral_constant<int, 3>, 4>(out_ds);
+        static_assert(is_sid<decltype(out)>::value);
+        auto in_ds = TypeParam::template builder<float_t const>(integral_constant<int, 4>{}).initializer(in).build();
+        static_assert(is_sid<decltype(in_ds)>::value);
+        auto in_transformed = sid::dimension_to_tuple_like<integral_constant<int, 3>, 4>(in_ds);
+        static_assert(is_sid<decltype(in_transformed)>::value);
+        auto comp = [&out, grid = TypeParam::make_grid(), &in = in_transformed] {
+            run_single_stage(copy_functor_tuple(), stencil_backend_t(), grid, in, out);
+        };
+        comp();
+        TypeParam::verify(in, out_ds);
+        TypeParam::benchmark("copy_stencil_tuple_dim2array", comp);
     }
 } // namespace
