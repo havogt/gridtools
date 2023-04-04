@@ -121,7 +121,11 @@ namespace {
         auto out3 = TypeParam::make_storage();
 	auto out = sid::composite::keys<integral_constant<int,0>,integral_constant<int,1>,integral_constant<int,2>,integral_constant<int,3>>::make_values(out0,out1,out2,out3);
 	static_assert(is_sid<decltype(out)>());
-	auto in_sid = sid::composite::keys<integral_constant<int,0>,integral_constant<int,1>,integral_constant<int,2>,integral_constant<int,3>>::make_values(TypeParam::make_const_storage(in),TypeParam::make_const_storage(in),TypeParam::make_const_storage(in),TypeParam::make_const_storage(in));
+	auto in0 = TypeParam::make_const_storage(in);
+	auto in1 = TypeParam::make_const_storage(in);
+	auto in2 = TypeParam::make_const_storage(in);
+	auto in3 = TypeParam::make_const_storage(in);
+	auto in_sid = sid::composite::keys<integral_constant<int,0>,integral_constant<int,1>,integral_constant<int,2>,integral_constant<int,3>>::make_values(in0,in1,in2,in3);
 	static_assert(is_sid<decltype(in_sid)>());
         auto comp = [&out,
                         grid = TypeParam::make_grid(),
