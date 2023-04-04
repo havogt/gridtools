@@ -157,6 +157,6 @@ namespace {
         };
         comp();
         TypeParam::verify(in, out_ds);
-        TypeParam::benchmark("copy_stencil_tuple_dim2array", comp);
+        TypeParam::benchmark("copy_stencil_tuple_dim2tuple", comp);
     }
 } // namespace
