@@ -278,11 +278,11 @@ namespace {
         auto comp = make_comp(fn_backend_t(), mesh, nabla);
         comp();
         auto expected = make_expected(mesh);
-        verify_any([&](int vertex, int k) { return get<0>(expected(vertex, k)); },
+	TypeParam::verify_with_bounds([&](int vertex, int k) { return get<0>(expected(vertex, k)); },
             [&](int vertex, int k) { return nabla_tmp->const_host_view()(vertex, k, 0); },
             array<array<size_t, 2>, 2>{
                 {{0, static_cast<size_t>(mesh.nvertices())}, {0, static_cast<size_t>(mesh.nlevels())}}});
-        verify_any([&](int vertex, int k) { return get<1>(expected(vertex, k)); },
+	TypeParam::verify_with_bounds([&](int vertex, int k) { return get<1>(expected(vertex, k)); },
             [&](int vertex, int k) { return nabla_tmp->const_host_view()(vertex, k, 1); },
             array<array<size_t, 2>, 2>{
                 {{0, static_cast<size_t>(mesh.nvertices())}, {0, static_cast<size_t>(mesh.nlevels())}}});
@@ -302,11 +302,11 @@ namespace {
         auto comp = make_comp(fn_backend_t(), mesh, nabla);
         comp();
         auto expected = make_expected(mesh);
-        verify_any([&](int vertex, int k) { return get<0>(expected(vertex, k)); },
+        TypeParam::verify_with_bounds([&](int vertex, int k) { return get<0>(expected(vertex, k)); },
             [&](int vertex, int k) { return nabla_tmp->const_host_view()(0, vertex, k); },
             array<array<size_t, 2>, 2>{
                 {{0, static_cast<size_t>(mesh.nvertices())}, {0, static_cast<size_t>(mesh.nlevels())}}});
-        verify_any([&](int vertex, int k) { return get<1>(expected(vertex, k)); },
+        TypeParam::verify_with_bounds([&](int vertex, int k) { return get<1>(expected(vertex, k)); },
             [&](int vertex, int k) { return nabla_tmp->const_host_view()(1, vertex, k); },
             array<array<size_t, 2>, 2>{
                 {{0, static_cast<size_t>(mesh.nvertices())}, {0, static_cast<size_t>(mesh.nlevels())}}});

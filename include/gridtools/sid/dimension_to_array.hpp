@@ -45,9 +45,55 @@ namespace gridtools {
                 }
             };
 
+	    namespace detail {
+template <class T> constexpr GT_FUNCTION T& FUN(T& t) noexcept { return t; }
+template <class T> void FUN(T&&) = delete;
+}
+
+template <class T>
+class reference_wrapper
+{
+public:
+    // types
+    using type = T;
+
+    // construct/copy/destroy
+    template <class U, class = decltype(
+        detail::FUN<T>(std::declval<U>()),
+        std::enable_if_t<!std::is_same_v<reference_wrapper, std::remove_cv_t<std::remove_reference_t<U>>>>()
+    )>
+    constexpr GT_FUNCTION reference_wrapper(U&& u)
+        noexcept(noexcept(detail::FUN<T>(std::forward<U>(u))))
+        : _ptr(std::addressof(detail::FUN<T>(std::forward<U>(u)))) {}
+
+    reference_wrapper(const reference_wrapper&) noexcept = default;
+
+    // assignment
+    reference_wrapper& operator=(const reference_wrapper& x) noexcept = default;
+
+    // access
+    constexpr GT_FUNCTION operator T& () const noexcept { return *_ptr; }
+    constexpr GT_FUNCTION T& get() const noexcept { return *_ptr; }
+
+    template< class... ArgTypes >
+    constexpr GT_FUNCTION std::invoke_result_t<T&, ArgTypes...>
+        operator() ( ArgTypes&&... args ) const
+            noexcept(std::is_nothrow_invocable_v<T&, ArgTypes...>)
+    {
+        return std::invoke(get(), std::forward<ArgTypes>(args)...);
+    }
+
+private:
+    T* _ptr;
+};
+
+// deduction guides
+template<class T>
+reference_wrapper(T&) -> reference_wrapper<T>;
+
             template <class T, size_t N>
             struct ref_array {
-                array<std::reference_wrapper<T>, N> m_arr;
+                array<reference_wrapper<T>, N> m_arr;
 
                 GT_FUNCTION constexpr T const &operator[](size_t i) const { return m_arr[i]; }
                 GT_FUNCTION T &operator[](size_t i) { return m_arr[i]; }
@@ -110,16 +156,16 @@ namespace gridtools {
             template <>
             struct ptr_array_deref_helper<true> {
                 template <class Ptr, class Stride, size_t N>
-                static auto apply(Ptr &ptr, Stride const &stride) {
+                static GT_FUNCTION auto apply(Ptr &ptr, Stride const &stride) {
                     return ref_array<std::remove_pointer_t<Ptr>, N>{
                         init_helper<std::make_index_sequence<N>>::template apply<>(
-                            [&](auto i) { return std::ref(*sid::shifted(ptr, stride, i)); })};
+                            [&](auto i) { return reference_wrapper(*sid::shifted(ptr, stride, i)); })};
                 }
             };
             template <>
             struct ptr_array_deref_helper<false> {
                 template <class Ptr, class Stride, size_t N>
-                static auto apply(Ptr const &ptr, Stride const &stride) {
+                static GT_FUNCTION auto apply(Ptr const &ptr, Stride const &stride) {
                     return init_helper<std::make_index_sequence<N>>::template apply<>(
                         [&](auto i) { return *sid::shifted(ptr, stride, i); });
                 }
@@ -135,33 +181,33 @@ namespace gridtools {
                 // #else
                 // no deduction guide for aggregate prior to c++20
                 // #endif
-                ptr_array(Ptr ptr, Stride const &stride) : m_ptr(ptr), m_stride(stride) {}
+                GT_FUNCTION ptr_array(Ptr ptr, Stride const &stride) : m_ptr(ptr), m_stride(stride) {}
                 ptr_array() = default;
 
                 template <class StrideT, class Offset>
-                constexpr void friend sid_shift(ptr_array &obj, StrideT const &stride, Offset const &o) {
+                constexpr GT_FUNCTION void friend sid_shift(ptr_array &obj, StrideT const &stride, Offset const &o) {
                     // static_assert(sizeof(StrideT) < 0);
                     // obj.m_ptr =
                     sid::shift(obj.m_ptr, stride, o);
                     // return ptr_array{sid::shifted(obj.m_ptr, stride, o), obj.m_stride};
                 }
 
-                auto operator*() { // if the derefed ptr is an lvalue we return a array of references, otherwise an
+                GT_FUNCTION auto operator*() { // if the derefed ptr is an lvalue we return a array of references, otherwise an
                                    // array of values
                     return ptr_array_deref_helper<std::is_lvalue_reference<decltype(*(this->m_ptr))>::value>::
                         template apply<Ptr, Stride, N>(this->m_ptr, this->m_stride);
                 }
-                auto operator*() const {
+                GT_FUNCTION auto operator*() const {
                     // return tuple_util::transform([](auto &&elem) { return *elem; }, this->m_arr);
                     return ptr_array_deref_helper<false>::template apply<Ptr, Stride, N>(this->m_ptr, this->m_stride);
                 }
 
                 template <class Arg>
-                constexpr auto friend operator+(ptr_array const &obj, Arg &&arg) {
+                constexpr GT_FUNCTION auto friend operator+(ptr_array const &obj, Arg &&arg) {
                     return ptr_array{obj.m_ptr + std::forward<Arg>(arg), obj.m_stride};
                 }
 
-                constexpr auto friend operator-(ptr_array const &lhs, ptr_array const &rhs) {
+                constexpr GT_FUNCTION auto friend operator-(ptr_array const &lhs, ptr_array const &rhs) {
                     return lhs.m_ptr - rhs.m_ptr;
                 }
             };
@@ -171,7 +217,7 @@ namespace gridtools {
                 OrigPtrHolder m_orig_ptr_holder;
                 Stride m_stride;
 
-                auto operator()() const {
+                GT_FUNCTION auto operator()() const {
                     return ptr_array<std::decay_t<decltype(std::declval<OrigPtrHolder>()())>, Stride, N>{
                         m_orig_ptr_holder(), m_stride};
                 }
