@@ -207,7 +207,7 @@ reference_wrapper(T&) -> reference_wrapper<T>;
                     return ptr_array{obj.m_ptr + std::forward<Arg>(arg), obj.m_stride};
                 }
 
-                constexpr GT_FUNCTION auto friend operator-(ptr_array const &lhs, ptr_array const &rhs) {
+                constexpr GT_FUNCTION decltype(std::declval<ptr_array>().m_ptr - std::declval<ptr_array>().m_ptr) friend operator-(ptr_array const &lhs, ptr_array const &rhs) {
                     return lhs.m_ptr - rhs.m_ptr;
                 }
             };
@@ -231,19 +231,19 @@ reference_wrapper(T&) -> reference_wrapper<T>;
             template <class Dim, class Sid, size_t N> // TODO make optional
                                                       // in case of static sid bounds?
             struct reinterpreted_sid : sid::delegate<Sid> {
-                friend auto sid_get_origin(reinterpreted_sid &obj) {
+                friend ptr_holder<sid::ptr_holder_type<Sid>, std::decay_t<decltype(at_key<Dim>(std::declval<sid::strides_type<Sid>>()))>, N> sid_get_origin(reinterpreted_sid &obj) {
                     return ptr_holder<sid::ptr_holder_type<Sid>,
                         std::decay_t<decltype(at_key<Dim>(sid::get_strides(obj.m_impl)))>,
                         N>{sid::get_origin(obj.m_impl), at_key<Dim>(sid::get_strides(obj.m_impl))};
                 }
 
-                friend auto sid_get_strides(reinterpreted_sid const &obj) {
+                friend decltype(hymap::canonicalize_and_remove_key<Dim>(std::declval<sid::strides_type<Sid>>())) sid_get_strides(reinterpreted_sid const &obj) {
                     return hymap::canonicalize_and_remove_key<Dim>(sid::get_strides(obj.m_impl));
                 }
-                friend auto sid_get_lower_bounds(reinterpreted_sid const &obj) {
+                friend decltype(hymap::canonicalize_and_remove_key<Dim>(std::declval<sid::lower_bounds_type<Sid>>())) sid_get_lower_bounds(reinterpreted_sid const &obj) {
                     return hymap::canonicalize_and_remove_key<Dim>(sid::get_lower_bounds(obj.m_impl));
                 }
-                friend auto sid_get_upper_bounds(reinterpreted_sid const &obj) {
+                friend decltype(hymap::canonicalize_and_remove_key<Dim>(std::declval<sid::upper_bounds_type<Sid>>())) sid_get_upper_bounds(reinterpreted_sid const &obj) {
                     return hymap::canonicalize_and_remove_key<Dim>(sid::get_upper_bounds(obj.m_impl));
                 }
 

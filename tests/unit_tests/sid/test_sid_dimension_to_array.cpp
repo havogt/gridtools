@@ -19,6 +19,60 @@
 #include <gridtools/sid/dimension_to_array.hpp>
 
 namespace gridtools {
+	template <class Sid> constexpr void is_sid_separate() {
+  using PtrHolder = sid::ptr_holder_type<Sid>;
+  using StridesType = sid::strides_type<Sid>;
+  using PtrDiff = sid::ptr_diff_type<Sid>;
+  using Ptr = sid::ptr_type<Sid>;
+  using ReferenceType = sid::reference_type<Sid>;
+  using StrideTypeList =
+      tuple_util::traits::to_types<std::decay_t<StridesType>>;
+  using StridesKind = sid::strides_kind<Sid>;
+  using LowerBoundsType = sid::lower_bounds_type<Sid>;
+  using UpperBoundsType = sid::upper_bounds_type<Sid>;
+
+  // `is_trivially_copyable` check is applied to the types that are will be
+  // passed from host to device
+  static_assert(std::is_trivially_copy_constructible<StridesType>{});
+  // auto tmp = std::declval<PtrHolder>();
+  // using OrigPtrHolder = decltype(tmp.m_orig_ptr_holder);
+  // using Stride = decltype(tmp.m_stride);
+  // static_assert(std::is_trivially_copy_constructible<OrigPtrHolder>{});
+  // static_assert(std::is_trivially_copy_constructible<Stride>{});
+  static_assert(std::is_trivially_copy_constructible<PtrHolder>{});
+
+  // verify that `PtrDiff` is sane
+  static_assert(std::is_default_constructible<PtrDiff>{});
+  static_assert(std::is_convertible<decltype(std::declval<Ptr const &>() +
+                                             std::declval<PtrDiff const &>()),
+                                    Ptr>{});
+
+  // `PtrHolder` supports `+` as well
+  // TODO(anstaf): we can do better here: verify that if we transform
+  // PtrHolder that way the result
+  //               thing also models SID
+  static_assert(
+      std::is_same<std::decay_t<decltype(std::declval<PtrHolder const &>() +
+                                         std::declval<PtrDiff const &>())>,
+                   PtrHolder>{});
+
+  // verify that `Reference` is sane
+  static_assert(std::negation<std::is_void<ReferenceType>>{});
+
+  // static_assert(
+  //     meta::all_of<sid::concept_impl_::is_valid_stride<Sid>::template apply,
+  //                  StrideTypeList>{});
+  // all strides must be applied via `shift` with both `Ptr` and
+  // `PtrDiff`
+  static_assert(sid::concept_impl_::are_valid_strides<StrideTypeList, Ptr>{});
+  static_assert(
+      sid::concept_impl_::are_valid_strides<StrideTypeList, PtrDiff>{});
+
+  static_assert(sid::concept_impl_::are_valid_bounds<
+                tuple_util::traits::to_types<std::decay_t<LowerBoundsType>>>{});
+  static_assert(sid::concept_impl_::are_valid_bounds<
+                tuple_util::traits::to_types<std::decay_t<UpperBoundsType>>>{});
+}
     namespace {
         using namespace literals;
         // TEST(ptr_array, smoke) {
@@ -115,7 +169,7 @@ namespace gridtools {
             double data[2][5];
             auto testee = sid::dimension_to_array<gridtools::integral_constant<int, 0>, 2>(data);
 
-            static_assert(is_sid<decltype(testee)>::value);
+            is_sid_separate<decltype(testee)>();
 
             auto ptr = sid::get_origin(testee)();
 
