@@ -52,10 +52,14 @@ namespace gridtools {
                 GT_FUNCTION constexpr T const &operator[](size_t i) const { return m_arr[i]; }
                 GT_FUNCTION T &operator[](size_t i) { return m_arr[i]; }
 
+                GT_FUNCTION ref_array &operator=(ref_array const &t) {
+                    assign_helper<std::make_index_sequence<N>>::apply(*this, t);
+                    return *this;
+                }
+
                 template <class TupleLike>
                 GT_FUNCTION ref_array &operator=(TupleLike const &t) { // TODO enable only for tuple_like
-                    assign_helper<std::make_index_sequence<tuple_util::size<TupleLike>::value>>::apply(
-                        *this, t); // TODO simplify
+                    assign_helper<std::make_index_sequence<N>>::apply(*this, t);
                     return *this;
                 }
             };

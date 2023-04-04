@@ -22,6 +22,11 @@ namespace gridtools {
         struct apply_intent_type;
 
         template <class T>
+        struct apply_intent_type<intent::inout, T> {
+            using type = T; // TODO does it make sense?
+        };
+
+        template <class T>
         struct apply_intent_type<intent::inout, T &> {
             using type = T &;
         };

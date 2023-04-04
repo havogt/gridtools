@@ -93,8 +93,6 @@ namespace gridtools {
             double data[3][4] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
             auto testee = sid::dimension_to_array<gridtools::integral_constant<int, 0>, 3>(data);
 
-            is_sid_separate<decltype(testee)>();
-
             auto ptr = sid::get_origin(testee)();
             // GT_META_PRINT_TYPE(decltype(ptr));
             auto strides = sid::get_strides(testee);
@@ -124,6 +122,20 @@ namespace gridtools {
             *ptr = tuple(2., 3.);
             EXPECT_EQ((*ptr)[0], 2.);
             EXPECT_EQ((*ptr)[1], 3.);
+        }
+        TEST(dimension_to_array, assignable_from_dim_to_array_sid) {
+            double data_in[3][3] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+            double data_out[3][3] = {};
+            auto testee_in = sid::dimension_to_array<gridtools::integral_constant<int, 0>, 3>(data_in);
+            auto testee_out = sid::dimension_to_array<gridtools::integral_constant<int, 1>, 3>(data_out);
+
+            auto ptr_in = sid::get_origin(testee_in)();
+            auto ptr_out = sid::get_origin(testee_out)();
+
+            *ptr_out = *ptr_in;
+            EXPECT_EQ(data_out[0][0], data_in[0][0]);
+            EXPECT_EQ(data_out[0][1], data_in[1][0]);
+            EXPECT_EQ(data_out[0][2], data_in[2][0]);
         }
 
         TEST(dimension_to_array, nested) {
