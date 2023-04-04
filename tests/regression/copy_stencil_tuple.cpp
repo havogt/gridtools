@@ -11,6 +11,7 @@
 #include <gtest/gtest.h>
 
 #include <gridtools/sid/dimension_to_array.hpp>
+#include <gridtools/sid/composite.hpp>
 #include <gridtools/stencil/cartesian.hpp>
 
 #include <stencil_select.hpp>
@@ -110,5 +111,29 @@ namespace {
         comp();
         TypeParam::verify(in, out_ds);
         TypeParam::benchmark("copy_stencil_tuple_dim2array", comp);
+    }
+
+    GT_REGRESSION_TEST(copy_stencil_tuple_composite, test_environment<>, stencil_backend_t) {
+        auto in = [](int i, int j, int k) { return i + j + k; };
+        auto out0 = TypeParam::make_storage();
+        auto out1 = TypeParam::make_storage();
+        auto out2 = TypeParam::make_storage();
+        auto out3 = TypeParam::make_storage();
+	auto out = sid::composite::keys<integral_constant<int,0>,integral_constant<int,1>,integral_constant<int,2>,integral_constant<int,3>>::make_values(out0,out1,out2,out3);
+	static_assert(is_sid<decltype(out)>());
+	auto in_sid = sid::composite::keys<integral_constant<int,0>,integral_constant<int,1>,integral_constant<int,2>,integral_constant<int,3>>::make_values(TypeParam::make_const_storage(in),TypeParam::make_const_storage(in),TypeParam::make_const_storage(in),TypeParam::make_const_storage(in));
+	static_assert(is_sid<decltype(in_sid)>());
+        auto comp = [&out,
+                        grid = TypeParam::make_grid(),
+			&in=in_sid] {
+            run_single_stage(
+                copy_functor_tuple(), stencil_backend_t(), grid, in, out);
+        };
+        comp();
+        TypeParam::verify(in, out0);
+        TypeParam::verify(in, out1);
+        TypeParam::verify(in, out2);
+        TypeParam::verify(in, out3);
+        TypeParam::benchmark("copy_stencil_tuple_composite", comp);
     }
 } // namespace
