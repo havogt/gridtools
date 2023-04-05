@@ -134,7 +134,7 @@ namespace {
             };
         comp();
         TypeParam::verify(in, out);
-        TypeParam::benchmark("copy_stencil_tuple_tuple", comp);
+        TypeParam::benchmark("copy_stencil_tuple_extra_dim", comp);
     }
 
     GT_REGRESSION_TEST(copy_stencil_tuple_dim2array, test_environment<>, stencil_backend_t) {
