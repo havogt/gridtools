@@ -34,6 +34,20 @@ namespace {
             eval(out()) = eval(in());
         }
     };
+    struct copy_functor_tuple_unrolled {
+        using in = in_accessor<0>;
+        using out = inout_accessor<1>;
+
+        using param_list = make_param_list<in, out>;
+
+        template <class Eval>
+        GT_FUNCTION static void apply(Eval &&eval) {
+            tuple_util::get<0>(eval(out())) = tuple_util::get<0>(eval(in()));
+            tuple_util::get<1>(eval(out())) = tuple_util::get<1>(eval(in()));
+            tuple_util::get<2>(eval(out())) = tuple_util::get<2>(eval(in()));
+            tuple_util::get<3>(eval(out())) = tuple_util::get<3>(eval(in()));
+        }
+    };
     struct copy_functor_data_dims {
         using in = in_accessor<0, extent<>, 4>;
         using out = inout_accessor<1, extent<>, 4>;
@@ -186,5 +200,23 @@ namespace {
         comp();
         TypeParam::verify(in, out_ds);
         TypeParam::benchmark("copy_stencil_tuple_dim2tuple", comp);
+    }
+    GT_REGRESSION_TEST(copy_stencil_tuple_dim2tuple_unrolled, test_environment<>, stencil_backend_t) {
+        using float_t = typename TypeParam::float_t;
+        auto in = [](int i, int j, int k, int t) { return i + j + k + t; };
+        auto out_ds = TypeParam::template builder<float_t>(integral_constant<int, 4>{}).build();
+        static_assert(is_sid<decltype(out_ds)>::value);
+        auto out = sid::dimension_to_tuple_like<integral_constant<int, 3>, 4>(out_ds);
+        static_assert(is_sid<decltype(out)>::value);
+        auto in_ds = TypeParam::template builder<float_t const>(integral_constant<int, 4>{}).initializer(in).build();
+        static_assert(is_sid<decltype(in_ds)>::value);
+        auto in_transformed = sid::dimension_to_tuple_like<integral_constant<int, 3>, 4>(in_ds);
+        static_assert(is_sid<decltype(in_transformed)>::value);
+        auto comp = [&out, grid = TypeParam::make_grid(), &in = in_transformed] {
+            run_single_stage(copy_functor_tuple_unrolled(), stencil_backend_t(), grid, in, out);
+        };
+        comp();
+        TypeParam::verify(in, out_ds);
+        TypeParam::benchmark("copy_stencil_tuple_dim2tuple_unrolled", comp);
     }
 } // namespace
