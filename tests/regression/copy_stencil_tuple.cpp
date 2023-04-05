@@ -34,6 +34,20 @@ namespace {
             eval(out()) = eval(in());
         }
     };
+    struct copy_functor_data_dims {
+        using in = in_accessor<0, extent<>, 4>;
+        using out = inout_accessor<1, extent<>, 4>;
+
+        using param_list = make_param_list<in, out>;
+
+        template <class Eval>
+        GT_FUNCTION static void apply(Eval &&eval) {
+            eval(out(0, 0, 0, 0)) = eval(in(0, 0, 0, 0));
+            eval(out(0, 0, 0, 1)) = eval(in(0, 0, 0, 1));
+            eval(out(0, 0, 0, 2)) = eval(in(0, 0, 0, 2));
+            eval(out(0, 0, 0, 3)) = eval(in(0, 0, 0, 3));
+        }
+    };
 
     struct copy_functor_unrolled {
         using in0 = in_accessor<0>;
@@ -90,6 +104,20 @@ namespace {
                         in = TypeParam::template make_const_storage<tuple<float_t, float_t, float_t, float_t>>(in)] {
             run_single_stage(copy_functor_tuple(), stencil_backend_t(), grid, in, out);
         };
+        comp();
+        TypeParam::verify(in, out);
+        TypeParam::benchmark("copy_stencil_tuple_tuple", comp);
+    }
+    GT_REGRESSION_TEST(copy_stencil_tuple_extra_dim, test_environment<>, stencil_backend_t) {
+        using float_t = typename TypeParam::float_t;
+        auto in = [](int i, int j, int k, int t) { return i + j + k + t; };
+        auto out = TypeParam::template builder<float_t>(integral_constant<int, 4>{}).build();
+        auto comp =
+            [&out,
+                grid = TypeParam::make_grid(),
+                in = TypeParam::template builder<float_t const>(integral_constant<int, 4>{}).initializer(in).build()] {
+                run_single_stage(copy_functor_data_dims(), stencil_backend_t(), grid, in, out);
+            };
         comp();
         TypeParam::verify(in, out);
         TypeParam::benchmark("copy_stencil_tuple_tuple", comp);
