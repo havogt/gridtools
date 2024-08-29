@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -10,11 +10,11 @@
 #pragma once
 
 #include <cassert>
+#include <functional>
 #include <type_traits>
 #include <utility>
 
 #include "../common/defs.hpp"
-#include "../common/enable_maker.hpp"
 #include "../common/for_each.hpp"
 #include "../common/host_device.hpp"
 #include "../common/hymap.hpp"
@@ -135,13 +135,6 @@ namespace gridtools {
                 };
 
                 struct ctor_tag {};
-
-                struct sum {
-                    template <class Lhs, class Rhs>
-                    GT_FUNCTION constexpr auto operator()(Lhs &&lhs, Rhs &&rhs) const {
-                        return std::forward<Lhs>(lhs) + std::forward<Rhs>(rhs);
-                    }
-                };
             } // namespace impl_
 
             /**
@@ -165,7 +158,7 @@ namespace gridtools {
              *
              */
             template <class...>
-            struct keys : private enable_maker {
+            struct keys {
                 template <class...>
                 struct composite_ptr;
                 template <class...>
@@ -174,11 +167,15 @@ namespace gridtools {
                 struct compressed;
                 template <class...>
                 struct values;
-#if !defined(__NVCC__) && defined(__clang__) && __clang_major__ <= 13
+#if !defined(__NVCC__) && defined(__clang__) && __clang_major__ <= 16
                 template <class... Sids>
                 values(Sids const &...) -> values<Sids...>;
 #endif
-                static constexpr maker<values> make_values = {};
+                // NVCC 11 fails to do class template deduction in the case of nested templates
+                template <class... Args>
+                static constexpr GT_FUNCTION values<Args...> make_values(Args &&...args) {
+                    return {std::forward<Args>(args)...};
+                }
             };
 
             template <class... Keys>
@@ -322,13 +319,13 @@ namespace gridtools {
                     template <class... Ptrs>
                     friend constexpr GT_FUNCTION composite_ptr<Ptrs...> operator+(
                         composite_ptr<Ptrs...> const &lhs, composite_entity const &rhs) {
-                        return tuple_util::host_device::transform(impl_::sum(), lhs, rhs);
+                        return tuple_util::host_device::transform(std::plus<>{}, lhs, rhs);
                     }
 
                     template <class... PtrHolders>
                     friend composite_ptr_holder<PtrHolders...> operator+(
                         composite_ptr_holder<PtrHolders...> const &lhs, composite_entity const &rhs) {
-                        return tuple_util::transform(impl_::sum(), lhs, rhs);
+                        return tuple_util::transform(std::plus<>{}, lhs, rhs);
                     }
 
                     template <class... Ptrs, class Offset>

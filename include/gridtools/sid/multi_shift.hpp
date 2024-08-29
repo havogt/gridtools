@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -34,7 +34,7 @@ namespace gridtools {
             template <template <class...> class L>
             struct for_each_dim<L<>> {
                 template <class Ptr, class Strides, class Offsets>
-                GT_FUNCTION for_each_dim(Ptr &ptr, Strides const &strides, Offsets offsets) {}
+                GT_FUNCTION for_each_dim(Ptr &, Strides const &, Offsets) {}
             };
 
             template <class Arg, class Dims>
@@ -54,7 +54,7 @@ namespace gridtools {
             template <class Arg, template <class...> class L>
             struct for_each_dim_a<Arg, L<>> {
                 template <class Ptr, class Strides, class Offsets>
-                GT_FUNCTION for_each_dim_a(Ptr &ptr, Strides const &strides, Offsets offsets) {}
+                GT_FUNCTION for_each_dim_a(Ptr &, Strides const &, Offsets) {}
             };
         } // namespace multi_shift_impl_
 

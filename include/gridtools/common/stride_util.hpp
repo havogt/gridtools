@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -53,7 +53,7 @@ namespace gridtools {
 
         template <class Sizes>
         auto total_size(Sizes const &sizes) {
-            return tuple_util::fold([](auto l, auto r) { return l * r; }, sizes);
+            return tuple_util::fold([](auto l, auto r) { return l * r; }, integral_constant<int, 1>{}, sizes);
         }
     } // namespace stride_util
 } // namespace gridtools

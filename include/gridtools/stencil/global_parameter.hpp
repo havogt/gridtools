@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -22,7 +22,8 @@ namespace gridtools {
 
             template <class T>
             struct global_parameter {
-                static_assert(std::is_trivially_copy_constructible_v<T>, "global parameter should be trivially copyable");
+                static_assert(
+                    std::is_trivially_copy_constructible_v<T>, "global parameter should be trivially copyable");
 
                 T m_value;
 

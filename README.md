@@ -1,9 +1,9 @@
-<a href="https://GridTools.github.io/gridtools"><img src="docs/_static/logo.svg"/></a>
+<a href="https://GridTools.github.io/gridtools"><img src="https://raw.githubusercontent.com/GridTools/gridtools/gh-pages/v1.0/_static/logo.svg"/></a>
 <br/><br/>
 <a target="_blank" href="https://opensource.org/licenses/BSD-3-Clause">![License: BSD][BSD.License]</a>
 ![](https://github.com/GridTools/gridtools/workflows/CI/badge.svg?branch=master)
 ![](https://github.com/GridTools/gridtools/workflows/CMake-config/badge.svg?branch=master)
-<a target="_blank" href="https://gridtools-slack.herokuapp.com"><img src="https://gridtools-slack.herokuapp.com/badge.svg"></a>
+<a target="_blank" href="https://join.slack.com/t/gridtools/shared_invite/zt-1mceuj747-59swuowC3MKAuCFyNAnc1g"><img src="https://img.shields.io/badge/slack-join-orange?logo=slack"></a>
 [![Gitpod Ready-to-Code](https://img.shields.io/badge/Gitpod-Ready--to--Code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/GridTools/gridtools) 
 
 The GridTools framework is a set of libraries and utilities to develop performance portable applications in the area of weather and climate. To achieve the goal of performance portability, the user-code is written in a generic form which is then optimized for a given architecture at compile-time. The core of GridTools is the stencil composition module which implements a DSL embedded in C++ for stencils and stencil-like patterns. Further, GridTools provides modules for halo exchanges, boundary conditions, data management and bindings to C and Fortran.
@@ -36,8 +36,8 @@ CUDAHOSTCXX=`which g++` # full path to the C++ compiler to be used as CUDA host 
 
 ##### Requirements
 - C++17 compiler (see also list of tested compilers)
-- Boost (1.65.1 or later)
-- CMake (3.14.5 or later)
+- Boost headers (1.73 or later)
+- CMake (3.18.1 or later)
 - CUDA Toolkit (11.0 or later, optional)
 - MPI (optional, CUDA-aware MPI for the GPU communication module `gcl_gpu`)
 
@@ -47,11 +47,11 @@ The GridTools libraries are currently nightly tested with the following compiler
 
 | Compiler | Backend | Tested on | Comments |
 | --- | --- | --- | --- |
-| Cray clang version 11.0.0 | all backends | Piz Daint | P100 GPU | with Clang-CUDA
-| Cray clang version 10.0.0 + NVCC 11.2 | all backends | Piz Daint | P100 GPU | 
-| Cray clang version 12.0.0 | all backends | Piz Daint | with -std=c++20
-| GNU 9.3.0 + NVCC 11.0 | all backends | Piz Daint | P100 GPU |
-| GNU 10.3.0 + NVCC 11.2 | all backends | Dom | P100 GPU |
+| Cray clang version 12.0.3 | all backends | Piz Daint | P100 GPU | with Clang-CUDA
+| Cray clang version 10.0.2 + NVCC 11.2 | all backends | Piz Daint | P100 GPU | 
+| Cray clang version 12.0.3 | all backends | Piz Daint | with -std=c++20
+| GNU 11.2.0 + NVCC 11.0 | all backends | Piz Daint | P100 GPU |
+| GNU 11.2.0 + NVCC 11.2 | all backends | Dom | P100 GPU |
 | GNU 8.3.0 + NVCC 11.2 | all backends | Tsa | V100 GPU |
 
 ##### Known issues
@@ -65,15 +65,7 @@ The GridTools libraries are currently nightly tested with the following compiler
 | Compiler | Backend | Date | Comments |
 | --- | --- | --- | --- |
 | Intel 19.1.1.217 | all backends | 2021-09-30 | with `cmake . -DCMAKE_CXX_FLAGS=-qnextgen` |
-
-##### Officially not supported (no workarounds implemented and planned)
-
-| Compiler | Backend | Date | Comments |
-| --- | --- | --- | --- |
-| Cray without Clang frontend| cpu_kfirst |  | no effort to fix compilation |
-| Cray clang version 9.0.2 | all backends | 2020-09-30 | with Cray extensions (works with flags `-fno-cray -fno-cray-gpu`) |
-| PGI 20.1 | cpu backends | 2020-10-08 | no effort to fix compilation |
-| Intel 19.1.0.166 | all backends | 2020-05-11 | even with `-qnextgen`, no effort to fix compilation |
+| NVHPC 23.3 | all backends | 2023-04-20 | only compilation is tested regularly in CI |
 
 ### Contributing
 

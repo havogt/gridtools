@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -158,6 +158,7 @@ namespace gridtools {
                     cuda_util::launch(blocks,
                         threads,
                         shared_memory_size,
+                        0, // if required propagate CUDA stream
                         wrapper<num_threads, BlockSizeI, BlockSizeJ, Extent, Fun>,
                         std::move(fun),
                         i_size,
@@ -184,6 +185,7 @@ namespace gridtools {
                     cuda_util::launch(blocks,
                         threads,
                         shared_memory_size,
+                        0, // if required propagate CUDA stream
                         zero_extent_wrapper<num_threads, BlockSizeI, BlockSizeJ, Fun>,
                         std::move(fun),
                         i_size,

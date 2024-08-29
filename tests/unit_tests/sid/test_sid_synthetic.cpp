@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -24,7 +24,7 @@ namespace gridtools {
 
         TEST(sid_synthetic, smoke) {
             double a = 100;
-            auto testee = sid::synthetic().set<property::origin>(sid::host_device::make_simple_ptr_holder(&a));
+            auto testee = sid::synthetic().set<property::origin>(sid::host_device::simple_ptr_holder(&a));
             static_assert(is_sid<decltype(testee)>::value);
 
             EXPECT_EQ(a, *sid::get_origin(testee)());
@@ -55,7 +55,7 @@ namespace gridtools {
                 strides the_strides = {stride{3}, stride{4}};
 
                 auto the_testee = sid::synthetic()
-                                      .set<property::origin>(sid::host_device::make_simple_ptr_holder(the_origin))
+                                      .set<property::origin>(sid::host_device::simple_ptr_holder(the_origin))
                                       .set<property::strides>(the_strides)
                                       .set<property::ptr_diff, ptr_diff>()
                                       .set<property::strides_kind, strides_kind>();

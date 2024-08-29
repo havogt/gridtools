@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -55,7 +55,7 @@ namespace gridtools {
                 }
 
                 template <size_t I, size_t J, class... Ts, std::enable_if_t<I != J, int> = 0>
-                GT_FUNCTION constexpr int_t pick_dimension(dimension<J> src, Ts... srcs) {
+                GT_FUNCTION constexpr int_t pick_dimension(dimension<J>, Ts... srcs) {
                     return pick_dimension<I>(srcs...);
                 }
 

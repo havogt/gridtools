@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -100,7 +100,6 @@
 
 #include "../meta.hpp"
 #include "defs.hpp"
-#include "enable_maker.hpp"
 #include "host_device.hpp"
 #include "integral_constant.hpp"
 #include "tuple.hpp"
@@ -195,16 +194,20 @@ namespace gridtools {
 
     namespace hymap {
         template <class...>
-        struct keys : private enable_maker {
+        struct keys {
             template <class...>
             struct values;
 
-#if !defined(__NVCC__) && defined(__clang__) && __clang_major__ <= 13
+#if !defined(__NVCC__) && defined(__clang__) && __clang_major__ <= 16
             template <class... Vs>
             values(Vs const &...) -> values<Vs...>;
 #endif
 
-            static constexpr maker<values> make_values = {};
+            // NVCC 11 fails to do class template deduction in the case of nested templates
+            template <class... Args>
+            static constexpr GT_FUNCTION values<Args...> make_values(Args const &...args) {
+                return {args...};
+            }
         };
 
         template <class... Keys>
@@ -229,6 +232,21 @@ namespace gridtools {
             values &operator=(values const &) = default;
             values &operator=(values &&) = default;
 
+            template <class Src>
+            constexpr GT_FUNCTION
+                std::enable_if_t<((!std::is_same_v<values, std::decay_t<Src>> && is_hymap<std::decay_t<Src>>::value) &&
+                                     ... &&
+                                     std::is_assignable_v<Vals &,
+                                         std::add_lvalue_reference_t<element_at<Keys, std::remove_reference_t<Src>>>>),
+                    values &>
+                operator=(Src &&src) {
+                (...,
+                    (tuple_util::host_device::get<meta::st_position<meta::list<Keys...>, Keys>::value>(m_vals) =
+                            tuple_util::host_device::get<meta::st_position<get_keys<std::decay_t<Src>>, Keys>::value>(
+                                src)));
+                return *this;
+            }
+
             GT_TUPLE_UTIL_FORWARD_GETTER_TO_MEMBER(values, m_vals);
 
             friend keys hymap_get_keys(values const &) { return {}; }
@@ -238,6 +256,7 @@ namespace gridtools {
         template <>
         struct keys<>::values<> {
             friend values tuple_getter(values const &) { return {}; }
+            friend keys hymap_get_keys(values const &) { return {}; }
         };
 
         template <class HyMap>
@@ -252,7 +271,7 @@ namespace gridtools {
                 meta::if_<meta::is_empty<MetaMap>, meta::list<meta::list<>, meta::list<>>, meta::transpose<MetaMap>>>
         using from_meta_map = from_keys_values<meta::first<KeysAndValues>, meta::second<KeysAndValues>, KeyCtor>;
 
-        namespace hymap_impl_ {
+        namespace impl_ {
             template <class Maps>
             using merged_keys = meta::dedup<meta::transform<meta::first, meta::flatten<Maps>>>;
 
@@ -285,7 +304,7 @@ namespace gridtools {
                 template <class Values, class Maps, class Keys = meta::flatten<meta::transform<get_keys, Maps>>>
                 using apply = typename get_from_keys_values<meta::first<Maps>>::template apply<Keys, Values>;
             };
-        } // namespace hymap_impl_
+        } // namespace impl_
     }     // namespace hymap
 } // namespace gridtools
 
@@ -377,8 +396,10 @@ namespace gridtools {
             template <class... Maps>
             GT_TARGET GT_FORCE_INLINE constexpr auto concat(Maps... maps) {
                 static_assert(meta::is_set_fast<meta::concat<get_keys<Maps>...>>::value, GT_INTERNAL_ERROR);
-                return tuple_util::concat_ex<hymap_impl_::concat_result_maker_f>(std::move(maps)...);
+                return tuple_util::concat_ex<impl_::concat_result_maker_f>(std::move(maps)...);
             }
+
+            GT_TARGET GT_FORCE_INLINE constexpr keys<>::values<> concat() { return {}; }
 
             template <template <class...> class KeyCtor,
                 class Keys,
@@ -511,8 +532,8 @@ namespace gridtools {
             GT_TARGET GT_FORCE_INLINE constexpr auto merge(Primary primary, Secondaries... secondaries) {
                 return merge(std::move(primary), merge(std::move(secondaries)...));
             }
-        } // namespace hymap
-    }     // namespace hymap
+        }
+    } // namespace hymap
 } // namespace gridtools
 
 #endif // GT_TARGET_ITERATING

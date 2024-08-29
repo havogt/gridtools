@@ -1,10 +1,6 @@
 gridtools_check_compilation(test_integral_constant test_integral_constant.cpp)
 gridtools_check_compilation(test_layout_map test_layout_map.cpp)
 
-if (CMAKE_CXX_STANDARD GREATER_EQUAL 20)
-    gridtools_add_unit_test(test_str_literal SOURCES test_str_literal.cpp)
-endif()
-
 gridtools_add_unit_test(test_array SOURCES test_array.cpp)
 gridtools_add_unit_test(test_compose SOURCES test_compose.cpp)
 gridtools_add_unit_test(test_hugepage_alloc SOURCES test_hugepage_alloc.cpp)
@@ -25,6 +21,10 @@ gridtools_add_unit_test(test_int_vector SOURCES test_int_vector.cpp NO_NVCC)
 if(TARGET _gridtools_cuda)
     gridtools_check_compilation(test_cuda_type_traits test_cuda_type_traits.cu)
 
+    gridtools_add_unit_test(test_hymap_cuda
+            SOURCES test_hymap.cu
+            LIBRARIES _gridtools_cuda
+            LABELS cuda)
     gridtools_add_unit_test(test_atomic_functions_cuda
             SOURCES test_atomic_functions.cu
             LIBRARIES _gridtools_cuda

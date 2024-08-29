@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -40,7 +40,8 @@ namespace gridtools {
 #if defined(GT_TARGET_HAS_DEVICE) and defined(__NVCC__)
         GT_DEVICE
 #endif
-        constexpr for_each_impl_::for_each_f<L> for_each = {};
+            constexpr for_each_impl_::for_each_f<L>
+                for_each = {};
     }
 } // namespace gridtools
 

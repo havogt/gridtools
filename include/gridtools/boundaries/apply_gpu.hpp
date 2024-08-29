@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -299,7 +299,7 @@ namespace gridtools {
             (DataField0, Datafield1, DataField2, ...)
             */
             template <typename... DataFieldViews>
-            void apply(DataFieldViews const &... data_field_views) const {
+            void apply(DataFieldViews const &...data_field_views) const {
                 apply_gpu_impl_::loop_kernel<<<m_conf.kernel_grid_size(), m_conf.kernel_thread_block_size()>>>(
                     m_boundary_function, m_predicate, m_conf, data_field_views...);
                 GT_CUDA_CHECK(cudaGetLastError());

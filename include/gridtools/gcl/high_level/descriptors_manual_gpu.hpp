@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -340,7 +340,7 @@ namespace gridtools {
                \param[in] fields vector with data fields pointers to be packed from
             */
             template <typename... Pointers>
-            void pack(const Pointers *... fields) {
+            void pack(const Pointers *...fields) {
                 typedef translate_t<3> translate;
                 auto ints = std::make_integer_sequence<unsigned int, sizeof...(Pointers)>{};
                 if (send_size[translate()(0, 0, -1)]) {
@@ -401,7 +401,7 @@ namespace gridtools {
             }
 
             template <typename... Pointers>
-            void unpack(Pointers *... fields) {
+            void unpack(Pointers *...fields) {
                 auto ints = std::make_integer_sequence<unsigned int, sizeof...(Pointers)>{};
                 typedef translate_t<3> translate;
                 if (recv_size[translate()(0, 0, -1)]) {

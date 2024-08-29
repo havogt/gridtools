@@ -1,5 +1,15 @@
 add_executable(perftests)
 
+file(WRITE 
+     "${CMAKE_CURRENT_BINARY_DIR}/dummy.cpp"
+     "// This file is needed in some cases because CMake targets must have at least one .cpp source."
+)
+target_sources(perftests PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/dummy.cpp")
+if (TARGET _gridtools_cuda)
+    target_link_libraries(perftests gridtools _gridtools_cuda)
+endif()
+gridtools_set_gpu_arch_on_target(perftests "${GT_CUDA_ARCH}")
+
 target_link_libraries(perftests regression_main)
 
 if(TARGET threadpool_hpx)
@@ -135,6 +145,7 @@ gridtools_add_cartesian_regression_test(horizontal_diffusion SOURCES horizontal_
 gridtools_add_cartesian_regression_test(horizontal_diffusion_fused SOURCES horizontal_diffusion_fused.cpp PERFTEST)
 gridtools_add_cartesian_regression_test(simple_hori_diff SOURCES simple_hori_diff.cpp PERFTEST)
 gridtools_add_cartesian_regression_test(copy_stencil SOURCES copy_stencil.cpp PERFTEST)
+gridtools_add_cartesian_regression_test(copy_stencil_tuple SOURCES copy_stencil_tuple.cpp PERFTEST)
 gridtools_add_cartesian_regression_test(vertical_advection_dycore SOURCES vertical_advection_dycore.cpp PERFTEST)
 gridtools_add_cartesian_regression_test(advection_pdbott_prepare_tracers SOURCES advection_pdbott_prepare_tracers.cpp PERFTEST)
 gridtools_add_cartesian_regression_test(parallel_multistage_fusion SOURCES parallel_multistage_fusion.cpp)

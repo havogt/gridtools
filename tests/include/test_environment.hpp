@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -26,12 +26,14 @@
 
 #include <gridtools/common/integral_constant.hpp>
 #include <gridtools/common/timer/timer.hpp>
+#include <gridtools/fn/cartesian.hpp>
 #include <gridtools/meta.hpp>
 #include <gridtools/stencil/frontend/axis.hpp>
 #include <gridtools/stencil/frontend/make_grid.hpp>
 #include <gridtools/storage/builder.hpp>
 #include <gridtools/storage/sid.hpp>
 
+#include "fn_mesh.hpp"
 #include "timer_select.hpp"
 #include "verifier.hpp"
 
@@ -78,7 +80,7 @@ namespace gridtools {
     namespace test_environment_impl_ {
 
         template <class T>
-        void backend_init(T, int &argc, char **argv) {}
+        void backend_init(T, int & /*argc*/, char ** /*argv*/) {}
 
         template <class T>
         void backend_finalize(T) {}
@@ -197,7 +199,7 @@ namespace gridtools {
                     return stencil::make_grid(halo_desc(d(0)), halo_desc(d(1)), Axis(d(2 + Is)...));
                 }
 
-                template <class Expected, class Actual, class EqualTo = default_equal_to<typename Actual::element_type>>
+                template <class Expected, class Actual, class EqualTo = default_equal_to>
                 static void verify(Expected const &expected, Actual const &actual, EqualTo equal_to = {}) {
                     if (!ParamsSource::needs_verification())
                         return;
@@ -206,11 +208,11 @@ namespace gridtools {
                     EXPECT_TRUE(verify_data_store(expected, actual, halos, equal_to));
                 }
 
-                template <class T = FloatType>
-                static auto builder() {
-                    return storage::builder<storage_traits_t> //
-                        .dimensions(d(0), d(1), k_size())     //
-                        .halos(Halo, Halo, 0)                 //
+                template <class T = FloatType, class... ExtraDims>
+                static auto builder(ExtraDims... extra_dims) {
+                    return storage::builder<storage_traits_t>            //
+                        .dimensions(d(0), d(1), k_size(), extra_dims...) //
+                        .halos(Halo, Halo, 0, ((void)extra_dims, 0)...)  //
                         .template type<T>();
                 }
 
@@ -267,6 +269,16 @@ namespace gridtools {
                     std::enable_if_t<std::is_convertible_v<U const &, T>, int> = 0>
                 static auto icosahedral_make_storage(Location loc, U const &arg) {
                     return icosahedral_builder<T>(loc).value(arg).build();
+                }
+
+                static auto fn_cartesian_sizes() {
+                    return hymap::keys<fn::cartesian::dim::i, fn::cartesian::dim::j, fn::cartesian::dim::k>::
+                        make_values(ParamsSource::d(0), ParamsSource::d(1), ParamsSource::d(2));
+                }
+
+                static auto fn_unstructured_mesh() {
+                    return structured_unstructured_mesh<storage_traits_t, float_t>(
+                        ParamsSource::d(0), ParamsSource::d(1), ParamsSource::d(2));
                 }
 
                 template <class Comp>

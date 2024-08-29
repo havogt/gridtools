@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -66,7 +66,7 @@ namespace gridtools {
                 : bc_apply(hd, boundary_f, predicate) {}
 
             template <typename... DataFields>
-            void apply(DataFields &... data_fields) const {
+            void apply(DataFields &...data_fields) const {
                 bc_apply.apply(data_fields->target_view()...);
             }
         };

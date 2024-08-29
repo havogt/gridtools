@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -61,7 +61,7 @@ class mpi_listener : public testing::EmptyTestEventListener {
     ///
     /// TODO : it might be an idea to use a resizeable buffer
     template <typename... Args>
-    void printf_helper(const char *s, Args &&... args) {
+    void printf_helper(const char *s, Args &&...args) {
         snprintf(buffer_, sizeof(buffer_), s, std::forward<Args>(args)...);
         print(buffer_);
     }

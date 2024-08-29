@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -19,10 +19,9 @@
 #include <string>
 #include <type_traits>
 #include <utility>
+#include <variant>
 
 #include <pybind11/pybind11.h>
-
-#include <boost/variant.hpp>
 
 #include "../../common/array.hpp"
 #include "../../common/integral_constant.hpp"
@@ -78,17 +77,17 @@ namespace gridtools {
 
         template <class T, size_t Dim, class Kind, size_t UnitStrideDim>
         struct wrapper {
-            pybind11::buffer_info m_info;
+            std::shared_ptr<pybind11::buffer_info> m_info;
 
             friend sid::simple_ptr_holder<T *> sid_get_origin(wrapper const &obj) {
-                return {reinterpret_cast<T *>(obj.m_info.ptr)};
+                return {reinterpret_cast<T *>(obj.m_info->ptr)};
             }
             friend auto sid_get_strides(wrapper const &obj) {
                 std::array<pybind11::ssize_t, Dim> res;
-                assert(obj.m_info.strides.size() == Dim);
+                assert(obj.m_info->strides.size() == Dim);
                 for (std::size_t i = 0; i != Dim; ++i) {
-                    assert(obj.m_info.strides[i] % obj.m_info.itemsize == 0);
-                    res[i] = obj.m_info.strides[i] / obj.m_info.itemsize;
+                    assert(obj.m_info->strides[i] % obj.m_info->itemsize == 0);
+                    res[i] = obj.m_info->strides[i] / obj.m_info->itemsize;
                 }
                 return assign_unit_stride<UnitStrideDim>(std::move(res), sid_get_upper_bounds(obj));
             }
@@ -98,10 +97,10 @@ namespace gridtools {
             }
             friend std::array<pybind11::ssize_t, Dim> sid_get_upper_bounds(wrapper const &obj) {
                 std::array<pybind11::ssize_t, Dim> res;
-                assert(obj.m_info.shape.size() == Dim);
+                assert(obj.m_info->shape.size() == Dim);
                 for (std::size_t i = 0; i != Dim; ++i) {
-                    assert(obj.m_info.shape[i] > 0);
-                    res[i] = obj.m_info.shape[i];
+                    assert(obj.m_info->shape[i] > 0);
+                    res[i] = obj.m_info->shape[i];
                 }
                 return res;
             }
@@ -143,7 +142,7 @@ namespace gridtools {
                 throw std::domain_error(
                     "buffer has incorrect format: " + info.format + "; expected " + expected_format);
             }
-            return {std::move(info)};
+            return {std::make_shared<pybind11::buffer_info>(std::move(info))};
         }
 
         struct typestr {
@@ -207,7 +206,7 @@ namespace gridtools {
         struct descr_node {
             std::string name;
             std::string basic_name;
-            boost::variant<typestr, descr> type;
+            std::variant<typestr, descr> type;
             std::vector<size_t> shape;
         };
 
@@ -251,7 +250,7 @@ namespace gridtools {
         inline size_t size(typestr const &src) { return src.size; }
 
         inline size_t size(descr_node const &src) {
-            size_t res = boost::apply_visitor([](auto const &src) { return size(src); }, src.type);
+            size_t res = std::visit([](auto const &src) { return size(src); }, src.type);
             for (auto &&d : src.shape)
                 res *= d;
             return res;
@@ -269,7 +268,13 @@ namespace gridtools {
             static_assert(std::is_trivially_copy_constructible_v<T>,
                 "as_cuda_sid should be instantiated with the trivially copyable type");
 
+#if defined(__HIP__)
+            // This is a custom property that has to be added manually (not provided by cupy).
+            // Should be replaced by `dlpack` for uniform array interface support.
+            auto iface = src.attr("__hip_array_interface__").cast<pybind11::dict>();
+#else
             auto iface = src.attr("__cuda_array_interface__").cast<pybind11::dict>();
+#endif
 
             // shape
             array<size_t, Dim> shape;
@@ -349,7 +354,6 @@ namespace gridtools {
     } // namespace python_sid_adapter_impl_
 
     // Makes a SID from the `pybind11::buffer`.
-    // Be aware that the return value is a move only object
     using python_sid_adapter_impl_::as_sid;
 
     using python_sid_adapter_impl_::as_cuda_sid;

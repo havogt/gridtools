@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -247,7 +247,7 @@ namespace gridtools {
                \param[in] _fields data fields to be packed
             */
             template <typename... FIELDS>
-            void pack(const FIELDS *... _fields) {
+            void pack(const FIELDS *..._fields) {
                 hd.pack(_fields...);
             }
 
@@ -257,7 +257,7 @@ namespace gridtools {
                \param[in] _fields data fields where to unpack data
             */
             template <typename... FIELDS>
-            void unpack(FIELDS *... _fields) {
+            void unpack(FIELDS *..._fields) {
                 hd.unpack(_fields...);
             }
 
@@ -398,7 +398,7 @@ namespace gridtools {
                \param[in] _fields data fields to be packed
             */
             template <typename... FIELDS>
-            void pack(const FIELDS &... _fields) const {
+            void pack(const FIELDS &..._fields) const {
                 hd.pack(_fields...);
             }
 
@@ -408,7 +408,7 @@ namespace gridtools {
                \param[in] _fields data fields where to unpack data
             */
             template <typename... FIELDS>
-            void unpack(const FIELDS &... _fields) const {
+            void unpack(const FIELDS &..._fields) const {
                 hd.unpack(_fields...);
             }
 

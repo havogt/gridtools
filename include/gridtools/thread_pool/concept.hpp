@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -48,7 +48,8 @@ namespace gridtools {
             auto thread_pool_parallel_for_loop(T const &obj, F const &f, Dims... limits)
                 -> decltype(thread_pool_parallel_for_loop(obj, std::declval<void (*)(size_t)>, 0)) {
                 std::tuple<Dims...> lims{limits...};
-                thread_pool_parallel_for_loop(obj,
+                thread_pool_parallel_for_loop(
+                    obj,
                     [&, strides = stride_util::make_strides_from_sizes(lims)](auto index) {
                         tuple_util::apply(f,
                             tuple_util::transform(

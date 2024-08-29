@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -81,7 +81,8 @@ namespace gridtools {
         template <typename A>
         GT_FUNCTION array &operator=(A const &a) {
             assert(a.size() == D);
-            std::copy(a.begin(), a.end(), m_array);
+            for (std::size_t i = 0; i < D; ++i)
+                m_array[i] = a.m_array[i];
             return *this;
         }
 

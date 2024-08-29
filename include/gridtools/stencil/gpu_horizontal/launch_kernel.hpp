@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -61,6 +61,7 @@ namespace gridtools {
                         dim3((i_size + BlockSizeI - 1) / BlockSizeI, (j_size + BlockSizeJ - 1) / BlockSizeJ, zblocks),
                         dim3(BlockSizeI, 1, 1),
                         0,
+                        0, // if required propagate CUDA stream
                         wrapper<BlockSizeI, BlockSizeI, BlockSizeJ, Fun>,
                         std::move(fun),
                         i_size,

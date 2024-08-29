@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -182,7 +182,7 @@
  * ```
  * Also tuple algorithms works with `foo` as expected:
  * ```
- *    auto x = tuple_util::trasnform([](auto x) { return x * 2; }, foo{1, 2.5});
+ *    auto x = tuple_util::transform([](auto x) { return x * 2; }, foo{1, 2.5});
  *    assert(x.a == 2);
  *    assert(x.b == 5.);
  * ```
@@ -289,8 +289,14 @@ namespace gridtools {
         //
         namespace lazy {
             template <size_t I, class T>
-            using element = meta::lazy::at_c<traits::to_types<T>, I>;
-        }
+            struct element {
+                using type = meta::at_c<traits::to_types<T>, I>;
+            };
+            template <size_t I, class T>
+            struct element<I, T const> {
+                using type = std::add_const_t<meta::at_c<traits::to_types<T>, I>>;
+            };
+        } // namespace lazy
         GT_META_DELEGATE_TO_LAZY(element, (size_t I, class T), (I, T));
 
         template <class T, class = void>
@@ -1577,7 +1583,7 @@ namespace gridtools {
              */
             template <template <class...> class L
 #if defined(__NVCC__) && defined(__CUDACC_VER_MAJOR__) && \
-    (__CUDACC_VER_MAJOR__ < 11 || __CUDACC_VER_MAJOR__ == 11 && __CUDACC_VER_MINOR__ <= 5)
+    (__CUDACC_VER_MAJOR__ < 11 || __CUDACC_VER_MAJOR__ == 11 && __CUDACC_VER_MINOR__ <= 8)
                 // workaround against nvcc bug: https://godbolt.org/z/orrev1xnM
                 ,
                 int = 0,
@@ -1590,7 +1596,7 @@ namespace gridtools {
 
             template <template <class...> class L
 #if defined(__NVCC__) && defined(__CUDACC_VER_MAJOR__) && \
-    (__CUDACC_VER_MAJOR__ < 11 || __CUDACC_VER_MAJOR__ == 11 && __CUDACC_VER_MINOR__ <= 5)
+    (__CUDACC_VER_MAJOR__ < 11 || __CUDACC_VER_MAJOR__ == 11 && __CUDACC_VER_MINOR__ <= 8)
 
                 // workaround against nvcc bug: https://godbolt.org/z/orrev1xnM
                 ,

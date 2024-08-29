@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -30,5 +30,9 @@ namespace gridtools {
         static_assert(is_integral_constant<std::integral_constant<int, 42>>::value);
         static_assert(is_gr_integral_constant<integral_constant<int, 42>>::value);
         static_assert(!is_gr_integral_constant<std::integral_constant<int, 42>>::value);
+
+        static_assert(std::is_same_v<to_integral_type_t<integral_constant<int, 42>>, int>);
+        static_assert(std::is_same_v<to_integral_type_t<std::integral_constant<int, 42>>, int>);
+        static_assert(std::is_same_v<to_integral_type_t<int>, int>);
     } // namespace
 } // namespace gridtools

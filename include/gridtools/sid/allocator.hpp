@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -124,7 +124,7 @@ namespace gridtools {
                     using type = typename LazyT::type;
                     auto ptr = self.m_impl(sizeof(type) * size);
                     self.m_buffers.push_back(self.m_impl(sizeof(type) * size));
-                    return make_simple_ptr_holder(reinterpret_cast<type *>(self.m_buffers.back().get()));
+                    return simple_ptr_holder(reinterpret_cast<type *>(self.m_buffers.back().get()));
                 }
             };
 

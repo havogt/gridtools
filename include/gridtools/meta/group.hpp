@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -39,15 +39,18 @@ namespace gridtools {
             struct continue_grouping_impl<Pred, L<T, Ts...>, meta::list<Us...>> : Pred<T, Us...> {};
 
             template <template <class...> class Pred,
-                template <class...> class F,
+                template <class...>
+                class F,
                 class List,
                 class Group,
                 bool = continue_grouping_impl<Pred, List, Group>::value>
             struct group_helper : push_front<typename group<Pred, F, List>::type, meta::rename<F, Group>> {};
 
             template <template <class...> class Pred,
-                template <class...> class F,
-                template <class...> class L,
+                template <class...>
+                class F,
+                template <class...>
+                class L,
                 class T,
                 class... Ts,
                 class Group>
@@ -55,8 +58,10 @@ namespace gridtools {
                 : group_helper<Pred, F, L<Ts...>, typename push_back<Group, T>::type> {};
 
             template <template <class...> class Pred,
-                template <class...> class F,
-                template <class...> class L,
+                template <class...>
+                class F,
+                template <class...>
+                class L,
                 class T,
                 class... Ts>
             struct group<Pred, F, L<T, Ts...>> : group_helper<Pred, F, L<Ts...>, list<T>> {};

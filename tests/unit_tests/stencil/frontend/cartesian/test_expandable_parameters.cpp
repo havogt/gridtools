@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -28,7 +28,7 @@ namespace {
         using storages_t = std::vector<env_t::storage_type>;
 
         template <class Comp, class... Args>
-        void run_computation(Comp comp, Args &&... args) const {
+        void run_computation(Comp comp, Args &&...args) const {
             expandable_run<2>(comp, naive(), env_t::make_grid(), std::forward<Args>(args)...);
         }
 

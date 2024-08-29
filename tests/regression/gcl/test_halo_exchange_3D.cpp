@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -45,14 +45,14 @@ using value_type = array<int, num_dims + 1>;
 value_type none() { return {-1, -1, -1, -1}; }
 
 template <class Testee, class... Fields>
-void exchange(std::false_type, Testee &testee, Fields const &... fields) {
+void exchange(std::false_type, Testee &testee, Fields const &...fields) {
     testee.pack(fields...);
     testee.exchange();
     testee.unpack(fields...);
 }
 
 template <class Testee, class... Fields>
-void exchange(std::true_type, Testee &testee, Fields const &... fields) {
+void exchange(std::true_type, Testee &testee, Fields const &...fields) {
     std::vector<std::common_type_t<Fields...>> vec{fields...};
     testee.pack(vec);
     testee.exchange();

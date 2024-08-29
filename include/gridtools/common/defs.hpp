@@ -1,13 +1,14 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
  * SPDX-License-Identifier: BSD-3-Clause
  */
 #pragma once
+#include <cassert>
 
 namespace gridtools {
     using int_t = int;
@@ -26,6 +27,30 @@ namespace gridtools {
 #endif
 #endif
 
+#if defined(__NVCC__) && defined(__CUDA_ARCH__) && \
+    (__CUDACC_VER_MAJOR__ == 11 && __CUDACC_VER_MINOR__ >= 2 || __CUDACC_VER_MAJOR__ > 11)
+#define GT_ASSUME(x) __builtin_assume(x)
+#endif
+#if !defined(GT_ASSUME) && defined(__has_builtin)
+#if __has_builtin(__builtin_assume)
+#define GT_ASSUME(x) __builtin_assume(x)
+#endif
+#if !defined(GT_ASSUME) && defined(__cpp_attributes)
+#if __has_cpp_attribute(assume)
+#define GT_ASSUME(x) [[assume(x)]]
+#endif
+#endif
+#endif
+#ifndef GT_ASSUME
+#define GT_ASSUME(x)
+#endif
+
+#ifdef NDEBUG
+#define GT_PROMISE(x) GT_ASSUME(x)
+#else
+#define GT_PROMISE(x) assert(x)
+#endif
+
 #ifdef __cpp_consteval
 #define GT_CONSTEVAL consteval
 #else
@@ -37,3 +62,25 @@ namespace gridtools {
     "GridTools Development Team."
 
 #define GT_INTERNAL_ERROR_MSG(x) GT_INTERNAL_ERROR "\nMessage\n\n" x
+
+#ifdef __NVCC__
+#define GT_NVCC_DIAG_STR(x) #x
+#ifdef __NVCC_DIAG_PRAGMA_SUPPORT__
+#define GT_NVCC_DIAG_PUSH_SUPPRESS(x) _Pragma("nv_diagnostic push") _Pragma(GT_NVCC_DIAG_STR(nv_diag_suppress x))
+#define GT_NVCC_DIAG_POP_SUPPRESS(x) _Pragma("nv_diagnostic pop")
+#else
+#define GT_NVCC_DIAG_PUSH_SUPPRESS(x) _Pragma(GT_NVCC_DIAG_STR(diag_suppress = x))
+#define GT_NVCC_DIAG_POP_SUPPRESS(x) _Pragma(GT_NVCC_DIAG_STR(diag_default = x))
+#endif
+#else
+#define GT_NVCC_DIAG_PUSH_SUPPRESS(x)
+#define GT_NVCC_DIAG_POP_SUPPRESS(x)
+#endif
+
+#if defined(__NVCC__) && (__CUDACC_VER_MAJOR__ == 12 && __CUDACC_VER_MINOR__ >= 1 && __CUDACC_VER_MINOR__ <= 4)
+// enables workaround for CTAD/constexpr issues in CUDA 12.1, 12.2, 12.3, 12.4
+// (https://github.com/GridTools/gridtools/issues/1766)
+#define GT_NVCC_WORKAROUND_1766 1
+#else
+#define GT_NVCC_WORKAROUND_1766 0
+#endif

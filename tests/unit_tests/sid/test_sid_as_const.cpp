@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -24,7 +24,7 @@ namespace gridtools {
 
         TEST(as_const, smoke) {
             double data = 42;
-            auto src = sid::synthetic().set<property::origin>(sid::host_device::make_simple_ptr_holder(&data));
+            auto src = sid::synthetic().set<property::origin>(sid::host_device::simple_ptr_holder(&data));
             auto testee = sid::as_const(src);
             using testee_t = decltype(testee);
 

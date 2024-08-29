@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -15,7 +15,6 @@
 #include "host_device.hpp"
 
 namespace gridtools {
-
     // This predicate checks if the the class has `std::integral_constant` as a public base.
     // Note that it is not the same as `class is an instantiation of gridtools::integral_constant`.
     // Also it is not the same as `class has `integral nested value_type type and value static member`.
@@ -40,6 +39,21 @@ namespace gridtools {
 
         constexpr GT_FUNCTION operator T() const noexcept { return V; }
     };
+
+    // Returns the value_type of an integral_constant or returns the type itself
+    template <class, class = void>
+    struct to_integral_type;
+    template <class T>
+    struct to_integral_type<T, std::enable_if_t<std::is_integral_v<T>>> {
+        using type = T;
+    };
+    template <class T>
+    struct to_integral_type<T, std::enable_if_t<is_integral_constant<T>::value>> {
+        using type = typename T::value_type;
+    };
+
+    template <class T>
+    using to_integral_type_t = typename to_integral_type<T>::type;
 
     // This predicate checks if the the class has `gridtools::integral_constant` as a public base, which has arithmetic
     // operators defined.
@@ -115,10 +129,10 @@ namespace gridtools {
             }
             template <>
             constexpr literal_int_t to_int<16>(char c) {
-                return c >= 'A' && c <= 'F'
-                           ? c - 'A' + 10
-                           : c >= 'a' && c <= 'f' ? c - 'a' + 10
-                                                  : c >= '0' && c <= '9' ? c - '0' : throw "invalid hex _c literal";
+                return c >= 'A' && c <= 'F'   ? c - 'A' + 10
+                       : c >= 'a' && c <= 'f' ? c - 'a' + 10
+                       : c >= '0' && c <= '9' ? c - '0'
+                                              : throw "invalid hex _c literal";
             }
 
             template <literal_int_t Base>

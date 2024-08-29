@@ -1,7 +1,7 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
@@ -50,9 +50,17 @@ namespace gridtools {
         return abs_error < precision || abs_error < abs_max * precision;
     }
 
-    template <class T, std::enable_if_t<!std::is_floating_point_v<T>, int> = 0>
+    template <class T, std::enable_if_t<!std::is_floating_point_v<T> && !tuple_util::is_tuple_like<T>::value, int> = 0>
     GT_FUNCTION bool expect_with_threshold(T const &expected, T const &actual, double = 0) {
         return actual == expected;
+    }
+
+    template <class T, std::enable_if_t<tuple_util::is_tuple_like<T>::value, int> = 0>
+    GT_FUNCTION bool expect_with_threshold(T const &expected,
+        T const &actual,
+        double precision = default_precision<std::decay_t<decltype(tuple_util::get<0>(std::declval<T>()))>>()) {
+        return tuple_util::all_of(
+            [=](auto const &ex, auto const &ac) { return expect_with_threshold(ex, ac, precision); }, expected, actual);
     }
 
     namespace verify_impl_ {
@@ -62,8 +70,8 @@ namespace gridtools {
             return fun(tuple_util::get<Is>(indices)...);
         }
         template <class F, class Indices>
-        auto apply(F const &fun, Indices const &indices) -> decltype(
-            verify_impl_::apply_impl(fun, indices, std::make_index_sequence<tuple_util::size<Indices>::value>())) {
+        auto apply(F const &fun, Indices const &indices) -> decltype(verify_impl_::apply_impl(
+            fun, indices, std::make_index_sequence<tuple_util::size<Indices>::value>())) {
             return apply_impl(fun, indices, std::make_index_sequence<tuple_util::size<Indices>::value>());
         }
 
@@ -76,34 +84,39 @@ namespace gridtools {
             std::void_t<decltype(verify_impl_::apply(std::declval<F const &>(), array<size_t, N>{}))>>
             : std::true_type {};
 
-        struct float_equal_to {
+        struct default_equal_to {
             template <class T>
             bool operator()(T lhs, T rhs) const {
                 return expect_with_threshold(lhs, rhs);
             }
         };
 
-        template <class DataStore>
-        using default_equal_to =
-            meta::if_<std::is_floating_point<typename DataStore::data_t>, float_equal_to, std::equal_to<>>;
+        template <class T, std::enable_if_t<tuple_util::is_tuple_like<T>::value, int> = 0>
+        std::ostream &operator<<(std::ostream &out, T const &t) {
+            out << "{";
+            bool first = true;
+            tuple_util::for_each(
+                [&](auto const &x) {
+                    if (first)
+                        first = false;
+                    else
+                        out << ", ";
+                    out << x;
+                },
+                t);
+            out << "}";
+            return out;
+        }
 
-        template <class Expected, class DataStore, class Halos, class EqualTo = default_equal_to<DataStore>>
-        std::enable_if_t<storage::is_data_store<DataStore>::value &&
-                             is_view_compatible<Expected, DataStore::ndims>::value,
-            bool>
-        verify_data_store(Expected const &expected,
-            std::shared_ptr<DataStore> const &actual,
-            Halos const &halos,
+        template <class Expected, class Actual, size_t NDims, class EqualTo = default_equal_to>
+        bool verify_generic(Expected const &expected,
+            Actual const &actual,
+            array<array<size_t, 2>, NDims> const &bounds,
             EqualTo equal_to = {}) {
-            array<array<size_t, 2>, DataStore::ndims> bounds;
-            auto &&lengths = actual->lengths();
-            for (size_t i = 0; i < bounds.size(); ++i)
-                bounds[i] = {halos[i][0], lengths[i] - halos[i][1]};
-            auto view = actual->const_host_view();
             static constexpr size_t err_lim = 20;
             size_t err_count = 0;
             for (auto &&pos : make_hypercube_view(bounds)) {
-                auto a = verify_impl_::apply(view, pos);
+                auto a = verify_impl_::apply(actual, pos);
                 decltype(a) e = verify_impl_::apply(expected, pos);
                 if (equal_to(e, a))
                     continue;
@@ -117,13 +130,29 @@ namespace gridtools {
             return err_count == 0;
         }
 
-        template <class DataStore, class Halos, class EqualTo = default_equal_to<DataStore>>
+        template <class Expected, class DataStore, class Halos, class EqualTo = default_equal_to>
+        std::enable_if_t<storage::is_data_store<DataStore>::value &&
+                             is_view_compatible<Expected, DataStore::ndims>::value,
+            bool>
+        verify_data_store(Expected const &expected,
+            std::shared_ptr<DataStore> const &actual,
+            Halos const &halos,
+            EqualTo equal_to = {}) {
+            array<array<size_t, 2>, DataStore::ndims> bounds;
+            auto &&lengths = actual->lengths();
+            for (size_t i = 0; i < bounds.size(); ++i)
+                bounds[i] = {halos[i][0], lengths[i] - halos[i][1]};
+            auto view = actual->const_host_view();
+            return verify_generic(expected, view, bounds, equal_to);
+        }
+
+        template <class DataStore, class Halos, class EqualTo = default_equal_to>
         std::enable_if_t<storage::is_data_store_ptr<DataStore>::value, bool> verify_data_store(
             DataStore const &expected, DataStore const &actual, Halos const &halos, EqualTo equal_to = {}) {
             return verify_data_store(expected->const_host_view(), actual, halos, equal_to);
         }
 
-        template <class T, class DataStore, class Halos, class EqualTo = default_equal_to<DataStore>>
+        template <class T, class DataStore, class Halos, class EqualTo = default_equal_to>
         std::enable_if_t<storage::is_data_store<DataStore>::value &&
                              std::is_convertible<T, typename DataStore::data_t>::value,
             bool>

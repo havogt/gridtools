@@ -1,17 +1,17 @@
 /*
  * GridTools
  *
- * Copyright (c) 2014-2021, ETH Zurich
+ * Copyright (c) 2014-2023, ETH Zurich
  * All rights reserved.
  *
  * Please, refer to the LICENSE file in the root directory.
  * SPDX-License-Identifier: BSD-3-Clause
  */
-#include <gridtools/fn/backend2/gpu.hpp>
+#include <gridtools/fn/backend/gpu.hpp>
 
 #include <gtest/gtest.h>
 
-#include <gridtools/fn/scan.hpp>
+#include <gridtools/fn/column_stage.hpp>
 #include <gridtools/sid/composite.hpp>
 #include <gridtools/sid/synthetic.hpp>
 
@@ -52,7 +52,7 @@ namespace gridtools::fn::backend {
 
             auto as_synthetic = [](int *x) {
                 return sid::synthetic()
-                    .set<property::origin>(sid::host_device::make_simple_ptr_holder(x))
+                    .set<property::origin>(sid::host_device::simple_ptr_holder(x))
                     .set<property::strides>(tuple(21_c, 3_c, 1_c));
             };
 
@@ -61,11 +61,12 @@ namespace gridtools::fn::backend {
 
             auto sizes = hymap::keys<int_t<0>, int_t<1>, int_t<2>>::values<int_t<5>, int_t<7>, int_t<3>>();
 
-            column_stage<int_t<1>, sum_scan, make_iterator_mock, 0, 1> cs;
+            column_stage<int_t<1>, sum_scan, 0, 1> cs;
 
             using block_sizes_t = meta::list<meta::list<int_t<0>, int_t<4>>, meta::list<int_t<2>, int_t<2>>>;
 
-            apply_column_stage<int_t<1>>(gpu<block_sizes_t>(), sizes, cs, composite, tuple(42, 1));
+            apply_column_stage(
+                gpu<block_sizes_t>(), sizes, cs, make_iterator_mock(), composite, int_t<1>(), tuple(42, 1));
 
             cudaMemcpy(outh, out.get(), 5 * 7 * 3 * sizeof(int), cudaMemcpyDeviceToHost);
             for (int i = 0; i < 5; ++i)
@@ -88,7 +89,7 @@ namespace gridtools::fn::backend {
 
             auto as_synthetic = [](int *x) {
                 return sid::synthetic()
-                    .set<property::origin>(sid::host_device::make_simple_ptr_holder(x))
+                    .set<property::origin>(sid::host_device::simple_ptr_holder(x))
                     .set<property::strides>(tuple(1_c));
             };
 
@@ -97,11 +98,12 @@ namespace gridtools::fn::backend {
 
             auto sizes = hymap::keys<int_t<0>>::values<int_t<5>>();
 
-            column_stage<int_t<0>, sum_scan, make_iterator_mock, 0, 1> cs;
+            column_stage<int_t<0>, sum_scan, 0, 1> cs;
 
             using block_sizes_t = meta::list<meta::list<int_t<0>, int_t<4>>, meta::list<int_t<2>, int_t<2>>>;
 
-            apply_column_stage<int_t<0>>(gpu<block_sizes_t>(), sizes, cs, composite, tuple(42, 1));
+            apply_column_stage(
+                gpu<block_sizes_t>(), sizes, cs, make_iterator_mock(), composite, int_t<0>(), tuple(42, 1));
 
             cudaMemcpy(outh, out.get(), 5 * sizeof(int), cudaMemcpyDeviceToHost);
             int res = 42;
@@ -125,7 +127,7 @@ namespace gridtools::fn::backend {
 
             auto as_synthetic = [](int *x) {
                 return sid::synthetic()
-                    .set<property::origin>(sid::host_device::make_simple_ptr_holder(x))
+                    .set<property::origin>(sid::host_device::simple_ptr_holder(x))
                     .set<property::strides>(tuple(126_c, 18_c, 6_c, 3_c, 1_c));
             };
 
@@ -135,14 +137,15 @@ namespace gridtools::fn::backend {
             auto sizes = hymap::keys<int_t<0>, int_t<1>, int_t<2>, int_t<3>, int_t<4>>::
                 values<int_t<5>, int_t<7>, int_t<3>, int_t<2>, int_t<3>>();
 
-            column_stage<int_t<1>, sum_scan, make_iterator_mock, 0, 1> cs;
+            column_stage<int_t<1>, sum_scan, 0, 1> cs;
 
             using block_sizes_t = meta::list<meta::list<int_t<0>, int_t<4>>,
                 meta::list<int_t<2>, int_t<2>>,
                 meta::list<int_t<3>, int_t<2>>,
                 meta::list<int_t<4>, int_t<1>>>;
 
-            apply_column_stage<int_t<1>>(gpu<block_sizes_t>(), sizes, cs, composite, tuple(42, 1));
+            apply_column_stage(
+                gpu<block_sizes_t>(), sizes, cs, make_iterator_mock(), composite, int_t<1>(), tuple(42, 1));
 
             cudaMemcpy(outh, out.get(), 5 * 7 * 3 * 2 * 3 * sizeof(int), cudaMemcpyDeviceToHost);
             for (int i = 0; i < 5; ++i)
@@ -197,7 +200,7 @@ namespace gridtools::fn::backend {
             using block_sizes_t = meta::list<meta::list<int_t<0>, int_t<4>>, meta::list<int_t<2>, int_t<2>>>;
             auto alloc = tmp_allocator(gpu<block_sizes_t>());
             auto sizes = hymap::keys<int_t<0>, int_t<1>, int_t<2>>::values<int_t<5>, int_t<7>, int_t<3>>();
-            auto tmp = allocate_global_tmp<int>(alloc, sizes);
+            auto tmp = allocate_global_tmp(alloc, sizes, data_type<int>());
             static_assert(sid::is_sid<decltype(tmp)>());
             auto ptr_holder = sid::get_origin(tmp);
             auto strides = sid::get_strides(tmp);
