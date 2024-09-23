@@ -7,7 +7,6 @@
  * Please, refer to the LICENSE file in the root directory.
  * SPDX-License-Identifier: BSD-3-Clause
  */
-#include "experimental/__p0009_bits/layout_right.hpp"
 #include "gridtools/meta/debug.hpp"
 #include "gridtools/sid/concept.hpp"
 #include <cstddef>
@@ -16,6 +15,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <experimental/mdarray>
 #include <experimental/mdspan>
 #include <gridtools/sid/simple_ptr_holder.hpp>
 #include <gridtools/sid/unknown_kind.hpp>
@@ -63,7 +63,8 @@ namespace impl {
     struct construct_strides_helper_right<std::index_sequence<Is...>> {
         template <class T>
         constexpr auto operator()(T const &t) {
-            return tuple{t.stride(Is)..., std::integral_constant<std::size_t, 1>{}};
+            return tuple{
+                t.stride(Is)..., std::integral_constant<std::size_t, 1>{}}; // optimization: compile time stride
         }
     };
     // template <class Extents, std::size_t... Is>
@@ -82,15 +83,16 @@ namespace impl {
     template <class ElementType, class Extents, class AccessorPolicy>
     auto construct_strides(
         std::experimental::mdspan<ElementType, Extents, std::experimental::layout_right, AccessorPolicy> const &t) {
-        return construct_strides_helper_right<std::make_index_sequence<std::experimental::
-                mdspan<ElementType, Extents, std::experimental::layout_right, AccessorPolicy>::rank()>>{}(t);
+        return construct_strides_helper_right<std::make_index_sequence<
+            std::experimental::mdspan<ElementType, Extents, std::experimental::layout_right, AccessorPolicy>::rank() -
+            1>>{}(t);
     }
 } // namespace impl
 
 namespace std::experimental {
     template <class ElementType, class Extents, class LayoutPolicy, class AccessorPolicy>
     auto sid_get_origin(mdspan<ElementType, Extents, LayoutPolicy, AccessorPolicy> &t) {
-        return gridtools::sid::make_simple_ptr_holder(t.data());
+        return gridtools::sid::simple_ptr_holder(t.data_handle());
     }
     template <class ElementType, class Extents, class LayoutPolicy, class AccessorPolicy>
     auto sid_get_strides(std::experimental::mdspan<ElementType, Extents, LayoutPolicy, AccessorPolicy> const &t) {
@@ -111,11 +113,11 @@ namespace std::experimental {
 TEST(mdspan, smoke) {
     int out[3][4][5];
 
-    auto s = std::experimental::mdspan(&out[0][0][0], std::experimental::extents<3, 4, 5>{});
+    auto extents = std::experimental::extents<std::size_t, 3, 4, 5>{};
+    auto s = std::experimental::mdspan(&out[0][0][0], extents);
 
     auto strides = sid::get_strides(s);
 
-    // GT_META_PRINT_TYPE(decltype(sid::get_strides(s)));
     static_assert(is_sid<decltype(s)>::value);
 
     // GT_META_PRINT_TYPE(decltype(s));
@@ -128,4 +130,12 @@ TEST(mdspan, smoke) {
     // TODO
     run_single_stage(copy(), naive(), grid(out), in, s);
     EXPECT_THAT(out, testing::ContainerEq(in));
+}
+
+TEST(mdarray, smoke) {
+    std::experimental::mdarray<double, std::experimental::dextents<int, 3>> out(3, 4, 5);
+    decltype(out) in(3, 4, 5);
+
+    run_single_stage(
+        copy(), naive(), make_grid(out.extent(0), out.extent(1), out.extent(2)), in.to_mdspan(), out.to_mdspan());
 }

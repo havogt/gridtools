@@ -172,7 +172,7 @@ if(GT_TESTS_ENABLE_MDSPAN)
     FetchContent_Declare(
         mdspan
         GIT_REPOSITORY https://github.com/kokkos/mdspan.git
-        GIT_TAG        mdspan-0.2.0
+        GIT_TAG        mdspan-0.6.0
     )
     FetchContent_MakeAvailable(mdspan)
     add_executable(mdspan_copy mdspan_copy.cpp)
