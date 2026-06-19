@@ -87,6 +87,42 @@ namespace gridtools::fn {
             }
         };
 
+        template <class Vertical, int AO, class Raw>
+        struct add_arg_offset_to_substage;
+        template <class Vertical, int AO, class ScanOrFold, int TopTrim, int BotTrim, int Out, int... Ins>
+        struct add_arg_offset_to_substage<Vertical, AO, scan_substage_raw<ScanOrFold, TopTrim, BotTrim, Out, Ins...>> {
+            using type = scan_substage<Vertical, ScanOrFold, TopTrim, BotTrim, Out + AO, Ins + AO...>;
+        };
+
+        // Turn a codegen-facing scan_with_tail_raw into the concrete scan_with_tail with the
+        // backend arg-offset applied: the scan input keys get +AO, and the Tail (a template on the
+        // offset) is instantiated as Tail<AO> so its own at_key<Out+AO>/at_key<In+AO> line up.
+        template <class Vertical, int AO, class Raw>
+        struct add_arg_offset_to_scan_with_tail;
+        template <class Vertical, int AO, class ScanOrFold, template <int> class Tail, int BodyTopTrim,
+            int BodyBotTrim, int TailTopTrim, int TailBotTrim, int... Ins>
+        struct add_arg_offset_to_scan_with_tail<Vertical, AO,
+            scan_with_tail_raw<ScanOrFold, Tail, BodyTopTrim, BodyBotTrim, TailTopTrim, TailBotTrim, Ins...>> {
+            using type = scan_with_tail<Vertical, ScanOrFold, Tail<AO>, BodyTopTrim, BodyBotTrim, TailTopTrim,
+                TailBotTrim, Ins + AO...>;
+        };
+
+        // Unifying offset-applier so a merged kernel can mix plain substages (scan_substage_raw)
+        // with tail-bearing ones (scan_with_tail_raw): the post-scan fold folds a cell-local
+        // consumer into the back-substitution substage of the fused forward/backward solve.
+        template <class Vertical, int AO, class Raw>
+        struct add_arg_offset_to_merged_substage {
+            using type = typename add_arg_offset_to_substage<Vertical, AO, Raw>::type;
+        };
+        template <class Vertical, int AO, class ScanOrFold, template <int> class Tail, int BodyTopTrim,
+            int BodyBotTrim, int TailTopTrim, int TailBotTrim, int... Ins>
+        struct add_arg_offset_to_merged_substage<Vertical, AO,
+            scan_with_tail_raw<ScanOrFold, Tail, BodyTopTrim, BodyBotTrim, TailTopTrim, TailBotTrim, Ins...>> {
+            using type = typename add_arg_offset_to_scan_with_tail<Vertical, AO,
+                scan_with_tail_raw<ScanOrFold, Tail, BodyTopTrim, BodyBotTrim, TailTopTrim, TailBotTrim,
+                    Ins...>>::type;
+        };
+
         template <class Vertical, class Data, class Seeds = std::tuple<>>
         struct vertical_executor {
             Data m_data;
@@ -106,6 +142,32 @@ namespace gridtools::fn {
                     Ins::value + Data::arg_offset_t::value...>());
                 auto seeds = tuple_util::deep_copy(tuple_util::push_back(std::move(m_seeds), std::move(seed)));
                 return vertical_executor<Vertical, decltype(data), decltype(seeds)>{std::move(data), std::move(seeds)};
+            }
+
+            // Merge several producer->consumer column scans into ONE kernel. `seeds` is a tuple
+            // with one seed per substage; each Raw is a scan_substage_raw<...> describing a scan's
+            // direction, vertical trims and raw arg indices. Emitted by codegen instead of N
+            // chained .assign() calls so the scans run as a single merged_seeded_column_stage.
+            template <class Seeds_, class... Raw>
+            auto assign_merged_scans(Seeds_ seeds, Raw...) && {
+                auto data = std::move(m_data).spec(merged_seeded_column_stage<
+                    typename add_arg_offset_to_merged_substage<Vertical, Data::arg_offset_t::value, Raw>::type...>());
+                auto seeds_ = tuple_util::deep_copy(tuple_util::push_back(std::move(m_seeds), std::move(seeds)));
+                return vertical_executor<Vertical, decltype(data), decltype(seeds_)>{
+                    std::move(data), std::move(seeds_)};
+            }
+
+            // Fold a cell-local post-scan field-op into the scan's tail: run ONE scan that, per
+            // level, feeds its result (res), previous result (acc) and seed (surface) to the Tail
+            // which writes the consumer's outputs directly — the scan's own output is never
+            // materialized to a SID. `raw` is a scan_with_tail_raw<...>; `seed` the scan init.
+            template <class Raw, class Seed>
+            auto assign_scan_with_tail(Raw, Seed seed) && {
+                auto data = std::move(m_data).spec(
+                    typename add_arg_offset_to_scan_with_tail<Vertical, Data::arg_offset_t::value, Raw>::type());
+                auto seeds = tuple_util::deep_copy(tuple_util::push_back(std::move(m_seeds), std::move(seed)));
+                return vertical_executor<Vertical, decltype(data), decltype(seeds)>{
+                    std::move(data), std::move(seeds)};
             }
 
             void execute() && {
