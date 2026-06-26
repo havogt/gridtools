@@ -77,9 +77,21 @@ namespace gridtools::fn {
 
         template <class Tag, class Ptr, class Strides, class Domain>
         GT_FUNCTION constexpr auto deref(iterator<Tag, Ptr, Strides, Domain> const &it) {
+#ifdef GT4PY_FN_BRANCHLESS_SKIP_REDUCE
+            // (A) Skip-value branchless reduction: clamp the load index so a skip iterator
+            // (m_index == -1) performs a SAFE, in-bounds, finite load (index 0) instead
+            // of an out-of-bounds -1 load. The caller masks the contribution to the
+            // reduction identity (0) when can_deref(it) is false, so the clamped value
+            // never affects the result. Removing the per-neighbor branch around the load
+            // lets the compiler hoist the K-row-base across all neighbors.
+            decltype(auto) stride = host_device::at_key<Tag>(sid::get_stride<dim::horizontal>(it.m_strides));
+            int idx = it.m_index < 0 ? 0 : it.m_index;
+            return const_ptr_deref(sid::shifted(it.m_ptr, stride, idx));
+#else
             GT_PROMISE(can_deref(it));
             decltype(auto) stride = host_device::at_key<Tag>(sid::get_stride<dim::horizontal>(it.m_strides));
             return const_ptr_deref(sid::shifted(it.m_ptr, stride, it.m_index));
+#endif
         }
 
         template <class Tag, class Ptr, class Strides, class Domain, class Conn, class Offset>
@@ -90,6 +102,35 @@ namespace gridtools::fn {
             shifted.m_index = new_index;
             return shifted;
         }
+#ifdef GT4PY_FN_BRANCHLESS_SKIP_REDUCE
+
+        // --- (B) iteraddr row-hoist + (A+B) combined branchless deref ----------------
+        // Resolve the WHOLE neighbor row of `it` over connectivity `Conn` ONCE.
+        // The branchless reduction codegen calls this once per reduction (hoisted out
+        // of the unrolled `_step` fold) and offsets per neighbor with
+        // `horizontal_shift_to`, instead of re-deriving the row base
+        // (m_index * index_stride) + reloading the row per neighbor.
+        template <class Tag, class Ptr, class Strides, class Domain, class Conn>
+        GT_FUNCTION constexpr auto neighbor_row(iterator<Tag, Ptr, Strides, Domain> const &it, Conn) {
+            auto const &table = host_device::at_key<Conn>(it.m_domain.m_tables);
+            using row_t = neighbor_table::neighbor_table_impl_::neighbor_list_type<
+                std::remove_reference_t<decltype(table)>>;
+            return it.m_index == -1 ? row_t{} : neighbor_table::neighbors(table, it.m_index);
+        }
+
+        // Build a shifted iterator from a pre-resolved neighbor row + compile-time element.
+        // `Offset` is an integral_constant value parameter (same calling convention as the
+        // last arg of `horizontal_shift`/`shift`), so the codegen passes the unrolled
+        // neighbor index `_i` positionally.
+        template <class Row, class Tag, class Ptr, class Strides, class Domain, class Offset>
+        GT_FUNCTION constexpr auto horizontal_shift_to(
+            iterator<Tag, Ptr, Strides, Domain> const &it, Row const &row, Offset) {
+            auto shifted = it;
+            shifted.m_index = it.m_index == -1 ? -1 : get<Offset::value>(row);
+            return shifted;
+        }
+        // -----------------------------------------------------------------------------
+#endif
 
         template <class Tag, class Ptr, class Strides, class Domain, class Dim, class Offset>
         GT_FUNCTION constexpr auto non_horizontal_shift(
@@ -174,6 +215,10 @@ namespace gridtools::fn {
     using unstructured_impl_::can_deref;
     using unstructured_impl_::connectivity;
     using unstructured_impl_::deref;
+#ifdef GT4PY_FN_BRANCHLESS_SKIP_REDUCE
+    using unstructured_impl_::horizontal_shift_to;
+    using unstructured_impl_::neighbor_row;
+#endif
     using unstructured_impl_::shift;
     using unstructured_impl_::unstructured_domain;
 } // namespace gridtools::fn
